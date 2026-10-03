@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+import { getEssays, formatDate } from '../lib/essays';
+
+const essays = await getEssays();
+---
+
+<Base>
+  <p class="lede">
+    Essays on building film and animation production as a system: pipelines, agents,
+    and what happens when the chores disappear.
+  </p>
+
+  {essays.length === 0 ? (
+    <p class="meta">The first essays are on their way.</p>
+  ) : (
+    <ul class="essay-list">
+      {essays.map((essay) => (
+        <li>
+          <h2>
+            <a href={`/essays/${essay.id}/`}>{essay.data.title}</a>
+            {essay.data.draft && <span class="draft-badge">Draft</span>}
+          </h2>
+          {essay.data.pubDate && <p class="meta">{formatDate(essay.data.pubDate)}</p>}
+          {essay.data.description && <p>{essay.data.description}</p>}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

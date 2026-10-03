@@ -1,0 +1,28 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { getEssays, formatDate } from '../../lib/essays';
+
+export async function getStaticPaths() {
+  const essays = await getEssays();
+  return essays.map((essay) => ({ params: { slug: essay.id }, props: { essay } }));
+}
+
+const { essay } = Astro.props;
+const { Content } = await render(essay);
+---
+
+<Base title={essay.data.title} description={essay.data.description}>
+  <article>
+    <h1>
+      {essay.data.title}
+      {essay.data.draft && <span class="draft-badge">Draft</span>}
+    </h1>
+    <p class="meta">
+      Tom Mikota{essay.data.pubDate && <> · {formatDate(essay.data.pubDate)}</>}
+    </p>
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</Base>
