@@ -2,6 +2,8 @@
 {
   "name": "movie-manufacturing",
   "compatibility_date": "2026-10-01",
+  // Builds the site before every deploy, so no build command is needed in the dashboard.
+  "build": { "command": "npm run build" },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page"
