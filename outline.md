@@ -110,6 +110,15 @@ In a pinch Review first, then publish - these can be standardized.
    2. Application Recipes (Menus, Shelves etc..)
    3. Custom Tool Management
 3. Agentic Execution of "tools", recipe steps.
+4. Release Management
+   1. Pipeline versions pinned per show
+   2. Rollout (staged: dev → test show → production shows)
+   3. Rollback
+   4. Release notes (feeds artist-facing docs)
+5. Testing
+   1. Tests for pipeline tools, plugins, and recipes
+   2. Staging / test show
+   3. Testing against each supported DCC / engine version
 
 ## 8. Services Architecture
 1. Image
@@ -118,6 +127,10 @@ In a pinch Review first, then publish - these can be standardized.
 4. AI Services
 5. Queuing Systems: (Deadline)
 6. Delivery (conform, delivery variants, output specs)
+7. Vendor / Outsource Exchange
+   1. Packaging data out to vendors (assets, plates, specs, house standards)
+   2. Ingesting vendor work back in (validation against house standards, renaming to tokens)
+   3. Tracking what was sent and received
 
 ## 9. Cloud IT & Infrastructure
 1. Identity & Access
@@ -196,10 +209,3 @@ Supercharged Artists — you don't build this directly; the systems produce it.
 
 **Commentary:** systems like this invert the hiring logic. You hire for experience, taste, and craft expertise — NOT for low wages. Because the system is a force multiplier, it's now cheaper to hire exceptional talent and 10x them. When you hire cheap, they are only as good as the person critiquing them — hire the critiquer.
 
----
-
-## Gaps to consider
-
-- **Pipeline release management:** how pipeline code rolls out per show, version pinning, rollback
-- **Testing:** tests for pipeline tools and recipes, and a staging show
-- **Vendor / outsource exchange:** packaging data in and out for other studios

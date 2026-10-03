@@ -40,8 +40,6 @@ Use these two as the recurring callbacks that tie the series together.
 ## Open questions
 - Who is the primary reader: pipeline TDs, supervisors/producers, or studio owners?
   That changes how technical each piece should be.
-- How much of Big Shot Pictures can be named or shown? Check the contract/NDA
-  before using client names, project names, or screenshots.
 - `dev/production_tokens.md` is referenced in the outline but isn't in this repo.
   Bring it in if it can be shared.
 - Section 5 note: "In a pinch Review first, then publish". Is that saying the
