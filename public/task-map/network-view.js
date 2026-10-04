@@ -746,7 +746,7 @@ function renderHandoffPanel(id, h) {
     ${row("Supported software", software.length, software.map(softwareLabel).join(", "))}
     <div class="hp-row hp-fail">
       <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${fmt(points)}</span></div>
-      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length)} file handoffs, per version</div>
+      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length)} file handoffs, <span class="hp-per-version">per version</span></div>
     </div>
     <button class="hp-break">Break one</button>
     <div class="hp-story"></div>`;
