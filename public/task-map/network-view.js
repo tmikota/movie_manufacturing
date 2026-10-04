@@ -65,6 +65,11 @@ let ICON_MAP = {};
 function iconUrl(sw) {
     return (ICON_MAP && ICON_MAP[sw]) || `/static/icons/software/${sw}.png`;
 }
+// {software_id: display name} for the icon hover labels.
+let LABEL_MAP = {};
+function softwareLabel(sw) {
+    return (LABEL_MAP && LABEL_MAP[sw]) || sw;
+}
 
 // --- Graph state --------------------------------------------------------------
 // Live handle to the rendered graph so edits (node placement) can update in
@@ -227,15 +232,26 @@ function ensureLinkTip() {
     return el;
 }
 
-function showLinkTip(event, d) {
+function showTip(event, html) {
     const el = ensureLinkTip();
     if (!el) return;
-    el.innerHTML =
-        `<b>${linkLabel(d.source)}</b>` +
-        `<span style="opacity:.55;margin:0 5px">→</span>` +
-        `${linkLabel(d.target)}`;
+    el.innerHTML = html;
     el.style.opacity = "1";
     moveLinkTip(event);
+}
+
+function showLinkTip(event, d) {
+    showTip(event,
+        `<b>${linkLabel(d.source)}</b>` +
+        `<span style="opacity:.55;margin:0 5px">→</span>` +
+        `${linkLabel(d.target)}`);
+}
+
+// Software icon hover: name the software, and say so when a click opens it.
+function showIconTip(event, sw, openable) {
+    showTip(event, openable
+        ? `<b>${softwareLabel(sw)}</b><span style="opacity:.55;margin-left:6px">· open pipeline</span>`
+        : `<b>${softwareLabel(sw)}</b>`);
 }
 
 function moveLinkTip(event) {
@@ -259,6 +275,7 @@ export async function initAlchemyGraph() {
     const response = await fetch(NET_CFG.dataUrl);
     const graphData = await response.json();
     ICON_MAP = graphData.icons || {};
+    LABEL_MAP = graphData.labels || {};
 
     // Deterministic state object
     const state = {
@@ -881,7 +898,11 @@ function createNodeContent(nodeGroup, handlers) {
           .attr("x", startX + i * (iconSize + spacing))
           .attr("y", 8)
           .attr("width", iconSize).attr("height", iconSize)
+          .classed("sw-icon", true)
           .classed("openable", openable)
+          .on("mouseover", (e) => showIconTip(e, sw, openable))
+          .on("mousemove", moveLinkTip)
+          .on("mouseout", hideLinkTip)
           .on("click", (e) => {
              e.stopPropagation();
              if (openable) handlers.onSoftwareClick(e, d, sw);
@@ -895,6 +916,7 @@ export async function loadAndRenderPipeline() {
     const res = await fetch(NET_CFG.dataUrl);
     const data = await res.json();
     ICON_MAP = data.icons || {};
+    LABEL_MAP = data.labels || {};
 
     // Calculate depth locally within the module
     const depthMap = computeDepthFromLinks(data.nodes, data.links);

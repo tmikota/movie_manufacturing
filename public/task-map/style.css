@@ -682,3 +682,18 @@ html, body {
 
 .temp-link { pointer-events: none; }
 .link { cursor: pointer; }
+
+/* Software icons on network nodes pop on hover (the hover label names them);
+   ones that open a pipeline also pick up a green glow. */
+.node image.sw-icon {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+.node image.sw-icon:hover {
+    transform: scale(1.35);
+}
+.node image.sw-icon.openable { cursor: pointer; }
+.node image.sw-icon.openable:hover {
+    filter: drop-shadow(0 0 5px rgba(149, 214, 164, 0.9));
+}
