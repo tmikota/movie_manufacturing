@@ -235,9 +235,10 @@ function ensureLinkTip() {
     return el;
 }
 
-function showTip(event, html) {
+function showTip(event, html, wide = false) {
     const el = ensureLinkTip();
     if (!el) return;
+    el.classList.toggle("tip-wide", wide);
     el.innerHTML = html;
     el.style.opacity = "1";
     moveLinkTip(event);
@@ -748,9 +749,9 @@ function renderHandoffPanel(id, h) {
     ${row("Software", software.length, software.map(softwareLabel).join(", "))}
     ${row("Dependencies", depts.length, depts.map(taskLabel).join(", "))}
     ${inputs.length ? row("Inputs", inExts.length,
-      `<div class="hp-chips">${inExts.map((x) => `<span class="chip chip-in">${x}</span>`).join("")}</div>
+      `<div class="hp-chips">${inExts.map((x) => `<span class="chip chip-in" data-ext="${x}" data-dir="in">${x}</span>`).join("")}</div>
        <div class="hp-from">from ${[...new Set(inputs.map((i) => taskLabel(i.task)))].join(", ")}</div>`) : ""}
-    ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip">${x}</span>`).join("")}</div>`)}
+    ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip" data-ext="${x}" data-dir="out">${x}</span>`).join("")}</div>`)}
     <div class="hp-row hp-fail">
       <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${fmt(points)}</span></div>
       <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length + inCount)} file handoffs${inCount ? ` (${fmt(inCount)} in, ${fmt(list.length)} out)` : ""}, <span class="hp-per-version">per version</span></div>
@@ -759,7 +760,41 @@ function renderHandoffPanel(id, h) {
     <div class="hp-story"></div>`;
   el.querySelector(".hp-close").onclick = clearSelection;
   el.querySelector(".hp-break").onclick = () => breakOne(id, h);
+  el.querySelectorAll(".chip[data-ext]").forEach((chip) => {
+    chip.addEventListener("mouseenter", (e) =>
+      showTip(e, chipTip(h, chip.dataset.ext, chip.dataset.dir), true));
+    chip.addEventListener("mousemove", moveLinkTip);
+    chip.addEventListener("mouseleave", hideLinkTip);
+  });
   el.style.display = "block";
+}
+
+// Native scene extensions name their app, so a multi-format deliverable can show
+// only the consumers that actually open that extension.
+const EXT_APP = { ".ma": "maya", ".mb": "maya", ".blend": "blender", ".max": "max" };
+
+// "What is this file for?": who takes it (or where it comes from) and why.
+function chipTip(h, ext, dir) {
+  const who = (pairs) => pairs.length
+    ? pairs.map((c) => `${taskLabel(c.task)} <span class="tip-app">(${softwareLabel(c.software)})</span>`).join(", ")
+    : "";
+  if (dir === "in") {
+    const ins = (h.inputs || []).filter((i) => (i.ext || []).includes(ext));
+    const from = [...new Set(ins.map((i) => taskLabel(i.task)))].join(", ");
+    const note = ins.map((i) => i.note).filter(Boolean)[0];
+    return `<div class="tip-ext">${ext}</div>` +
+      (from ? `<div class="tip-who">from ${from}</div>` : "") +
+      (note ? `<div class="tip-for">${note}</div>` : "");
+  }
+  const dels = (h.deliverables || []).filter((d) => (d.ext || []).includes(ext));
+  const ids = new Set(dels.map((d) => d.id));
+  const app = EXT_APP[ext];
+  const takers = (h.consumers || []).filter((c) =>
+    (c.takes || []).some((t) => ids.has(t)) && (!app || c.software === app));
+  const usedFor = dels.map((d) => d.used_for).filter(Boolean)[0];
+  return `<div class="tip-ext">${ext}</div>` +
+    (takers.length ? `<div class="tip-who">&rarr; ${who(takers)}</div>` : "") +
+    (usedFor ? `<div class="tip-for">${usedFor}</div>` : "");
 }
 
 function hideHandoffPanel() {

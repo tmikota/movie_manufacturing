@@ -824,3 +824,19 @@ html, body {
 #handoff-panel .hp-story:empty { display: none; }
 #handoff-panel .hp-chain { display: block; margin-top: 6px; color: #ff9b9b; }
 #handoff-panel .hp-typical { display: block; margin-top: 6px; color: #8a8a93; font-style: italic; }
+
+/* Hover tip on the panel's file-type chips: wraps, opens left of the cursor. */
+.link-tip.tip-wide {
+    white-space: normal;
+    width: 240px;
+    text-align: left;
+    font-weight: 500;
+    line-height: 1.4;
+    padding: 8px 10px;
+    transform: translate(calc(-100% - 12px), -50%);
+}
+.link-tip .tip-ext { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 3px; }
+.link-tip .tip-who { color: #b9e3c3; }
+.link-tip .tip-app { color: #8a8a93; }
+.link-tip .tip-for { margin-top: 4px; color: #cfcfd6; }
+#handoff-panel .chip[data-ext] { cursor: help; }
