@@ -895,7 +895,7 @@ function createNodeContent(nodeGroup, handlers) {
       let startX = -rowWidth / 2;
 
       icons.forEach((sw, i) => {
-        const openable = d.has_cookbook && NET_CFG.canOpen(sw, d.id);
+        const openable = (d.has_cookbook || !!d.default_pipeline) && NET_CFG.canOpen(sw, d.id);
         g.append("image")
           .attr("xlink:href", iconUrl(sw))
           .attr("x", startX + i * (iconSize + spacing))
@@ -938,7 +938,7 @@ export async function loadAndRenderPipeline() {
         hideTooltip: () => {},
         // Matches the router: /cookbook/task-map/{software}/{task_id}
         onSoftwareClick: (e, d, sw) => {
-            if (!d.has_cookbook) return;
+            if (!d.has_cookbook && !d.default_pipeline) return;
             NET_CFG.openPipeline(sw, d.id);
         },
         onNodeClick: (e, d) => {
