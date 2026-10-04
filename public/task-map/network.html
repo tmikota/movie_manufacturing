@@ -34,8 +34,10 @@
     .net-controls .sep { width: 1px; height: 22px; background: #2a2a2a; margin: 0 4px; }
     #visualization { flex: 1; position: relative; overflow: hidden; cursor: grab; }
     #visualization:active { cursor: grabbing; }
-    /* Read-only: nothing to drag or delete; only live pipelines are clickable. */
-    .node.read-only, .link { cursor: default; }
+    /* Read-only: nothing to drag or delete. Cards select (inputs/outputs); only
+       live pipelines' icons open a map. */
+    .link { cursor: default; }
+    .node.read-only { cursor: pointer; }
     .node image.openable { cursor: pointer; }
   </style>
   <script>
@@ -69,7 +71,7 @@ window.ALC_NET_CFG = {
     <header class="net-bar">
       <div class="net-title">
         <h2>Production Pipeline</h2>
-        <p>How work flows from task to task</p>
+        <p>Click a task to see what flows in and out</p>
       </div>
       <div class="net-controls">
       <button onclick="pipelineFit()" title="Zoom to fit every task">Fit</button>

@@ -15,12 +15,6 @@ import Base from '../layouts/Base.astro';
   <div class="network-frame full-bleed">
     <iframe src="/task-map/network.html" title="Production pipeline network"></iframe>
   </div>
-  <p class="frame-note">
-    Drag to pan, scroll to zoom. Every task runs on a working pipeline: the bright ones
-    have custom steps, the dark ones use the defaults (start, review, publish). Click the
-    Alchemy flask on any task, or any software icon that glows on hover, to open that
-    pipeline's map below.
-  </p>
 
   <div class="map-frame full-bleed" id="pipeline-map-section">
     <iframe
@@ -43,17 +37,14 @@ import Base from '../layouts/Base.astro';
     overflow: hidden;
     background: #0d0d0f;
   }
+  .map-frame {
+    border-top: 1px solid #26262c;
+  }
   .network-frame iframe {
     display: block;
     width: 100%;
     height: max(32rem, 75vh);
     border: 0;
-  }
-  .frame-note {
-    font-family: var(--sans);
-    font-size: 0.9rem;
-    color: var(--muted);
-    margin: 0.75rem 0 2.5rem;
   }
   .map-frame iframe {
     display: block;

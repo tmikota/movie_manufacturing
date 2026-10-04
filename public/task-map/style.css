@@ -708,3 +708,41 @@ html, body {
 .node-default .node-label {
     fill: #c9d3cb;
 }
+
+/* --- Selection: a clicked task's inputs (blue) and outputs (green) ---------- */
+/* Dimming works on the node's children and the wires' stroke-opacity, so it
+   stacks with the category filter (which sets opacity inline on .node/.link). */
+.has-selection .node:not(.sel-node):not(.sel-up):not(.sel-down) > * {
+    opacity: 0.25;
+    transition: opacity 0.2s ease;
+}
+.has-selection .link:not(.sel-in):not(.sel-out) {
+    stroke-opacity: 0.12;
+}
+.link.sel-in {
+    stroke: #6fb3ff;
+    stroke-width: 2.5;
+    marker-end: url(#arrow-in);
+}
+.link.sel-out {
+    stroke: #95D6A4;
+    stroke-width: 2.5;
+    marker-end: url(#arrow-out);
+}
+.node.sel-node .network-node-rect {
+    stroke: #ffffff;
+    stroke-width: 4;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.35));
+}
+.node.sel-up .network-node-rect {
+    stroke: #6fb3ff;
+    stroke-width: 3;
+}
+.node.sel-down .network-node-rect {
+    stroke: #95D6A4;
+    stroke-width: 3;
+}
+.flow-dot {
+    pointer-events: none;
+    filter: drop-shadow(0 0 4px currentColor);
+}

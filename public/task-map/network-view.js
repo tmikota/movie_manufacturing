@@ -343,6 +343,19 @@ export function renderNetworkView(state, handlers) {
         .attr("d", "M0,-5L10,0L0,5")
         .attr("fill", "#4a5568");
 
+    // Colored arrowheads for a selected node's input (blue) and output (green) wires.
+    [["arrow-in", FLOW_IN], ["arrow-out", FLOW_OUT]].forEach(([id, color]) => {
+      svg.select("defs").append("marker")
+          .attr("id", id)
+          .attr("viewBox", "0 -5 10 10")
+          .attr("refX", 10).attr("refY", 0)
+          .attr("markerWidth", 8).attr("markerHeight", 8)
+          .attr("orient", "auto")
+        .append("path")
+          .attr("d", "M0,-5L10,0L0,5")
+          .attr("fill", color);
+    });
+
     // A faint snap grid, drawn as a tiling pattern so it pans/zooms with the graph
     // and visually communicates where nodes snap to.
     svg.select("defs").append("pattern")
@@ -372,6 +385,9 @@ export function renderNetworkView(state, handlers) {
         svgGroup.attr("transform", event.transform);
     });
     svg.call(ZOOM);
+    // A click on empty canvas clears the selection (d3.zoom swallows the click
+    // that ends a pan, so panning doesn't).
+    svg.on("click", (event) => { if (event.target === svg.node()) clearSelection(); });
 
     createForceSimulation(svgGroup, nodes, links, depthMap, laneWidth, height, handlers, svg);
 
@@ -392,6 +408,7 @@ function createForceSimulation(
   // Explicit layers keep links under nodes and give the sync/edit code stable
   // parents to (re)bind against.
   const linksLayer = svg.append("g").attr("class", "links-layer");
+  const flowLayer = svg.append("g").attr("class", "flow-layer"); // selection dots
   const nodesLayer = svg.append("g").attr("class", "nodes-layer");
 
   // Initial auto-scatter: forceX spreads nodes by dependency depth, forceY holds
@@ -410,7 +427,8 @@ function createForceSimulation(
   // Publish live handles so the connect/disconnect handlers can edit in place.
   GRAPH = {
     nodes, links, depthMap, laneWidth, height,
-    svgGroup: svg, svgEl, linksLayer, nodesLayer,
+    svgGroup: svg, svgEl, linksLayer, flowLayer, nodesLayer,
+    selected: null,
     simulation, handlers,
     linkSel: null, nodeSel: null,
   };
@@ -482,11 +500,11 @@ function createForceSimulation(
   nodeGroup
     .on("mouseover", handlers.showTooltip)
     .on("mouseout", handlers.hideTooltip)
+    // Clicking a card selects it: its inputs and outputs light up and dots flow
+    // through it. Opening a pipeline is the software icons' job.
     .on("click", (event, d) => {
-      const sw = d.software || [];
-      if (sw.length === 1 && NET_CFG.canOpen(sw[0], d.id)) {
-        NET_CFG.openPipeline(sw[0], d.id);
-      }
+      event.stopPropagation();
+      selectNode(GRAPH.selected === d.id ? null : d.id);
     });
 
   GRAPH.nodeSel = nodeGroup;
@@ -516,6 +534,7 @@ function syncLinks() {
   const enter = sel.enter()
     .append("path")
     .attr("class", "link")
+    .attr("id", linkDomId) // the flow dots ride these paths via <mpath>
     .attr("fill", "none")
     .attr("stroke", "#4a5568")
     .attr("stroke-width", 1.75)
@@ -541,6 +560,76 @@ function syncLinks() {
   GRAPH.linkSel.attr("d", linkPath);
 
   if (GRAPH.nodeSel) applyNodeSize(GRAPH.nodeSel);
+  // Wires were added/removed: re-derive the selection's inputs/outputs.
+  if (GRAPH.selected) selectNode(GRAPH.selected);
+}
+
+// --- Selection: inputs, outputs, and data flow --------------------------------
+
+const FLOW_IN = "#6fb3ff";   // wires/tasks feeding the selected task
+const FLOW_OUT = "#95D6A4";  // wires/tasks it feeds (alcGreen)
+const FLOW_DUR = 1.6;        // seconds for a dot to travel one wire
+const DOTS_PER_WIRE = 3;
+
+function linkDomId(l) {
+  return `link-${srcId(l)}--${tgtId(l)}`.replace(/[^A-Za-z0-9_-]/g, "_");
+}
+
+// Select a task (or clear with null). Its input wires and upstream tasks turn
+// blue, output wires and downstream tasks green, everything else dims, and dots
+// run along the wires: in from upstream, then on out to downstream.
+function selectNode(id) {
+  if (!GRAPH) return;
+  GRAPH.selected = id;
+  const svg = d3.select(GRAPH.svgEl.node());
+  svg.classed("has-selection", !!id);
+  GRAPH.flowLayer.selectAll("*").remove();
+  if (!id) {
+    GRAPH.nodeSel.classed("sel-node", false).classed("sel-up", false).classed("sel-down", false);
+    GRAPH.linkSel.classed("sel-in", false).classed("sel-out", false);
+    return;
+  }
+
+  const ins = GRAPH.links.filter((l) => tgtId(l) === id);
+  const outs = GRAPH.links.filter((l) => srcId(l) === id);
+  const up = new Set(ins.map(srcId));
+  const down = new Set(outs.map(tgtId));
+
+  GRAPH.nodeSel
+    .classed("sel-node", (n) => n.id === id)
+    .classed("sel-up", (n) => up.has(n.id))
+    .classed("sel-down", (n) => down.has(n.id));
+  GRAPH.linkSel
+    .classed("sel-in", (l) => tgtId(l) === id)
+    .classed("sel-out", (l) => srcId(l) === id);
+
+  // Dots: SVG <animateMotion> along each wire's own path, so they follow the wire
+  // even as nodes move. Outputs start half a trip later than inputs, so the flow
+  // reads as arriving at the task and then leaving it.
+  const addDots = (links, color, offset) => links.forEach((l) => {
+    for (let i = 0; i < DOTS_PER_WIRE; i++) {
+      const dot = GRAPH.flowLayer.append("circle")
+        .attr("class", "flow-dot")
+        .attr("r", 5)
+        .attr("fill", color);
+      const anim = dot.append("animateMotion")
+        .attr("dur", `${FLOW_DUR}s`)
+        .attr("repeatCount", "indefinite")
+        .attr("begin", `${offset + (i * FLOW_DUR) / DOTS_PER_WIRE}s`)
+        .attr("rotate", "auto");
+      anim.append("mpath")
+        .attr("href", `#${linkDomId(l)}`)
+        .attr("xlink:href", `#${linkDomId(l)}`);
+    }
+  });
+  addDots(ins, FLOW_IN, 0);
+  addDots(outs, FLOW_OUT, FLOW_DUR / 2);
+}
+
+function clearSelection() { selectNode(null); }
+
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") clearSelection(); });
 }
 
 // Nodes are a uniform height now (no ports to stack). Kept as a function so the
