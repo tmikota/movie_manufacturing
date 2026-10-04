@@ -1,0 +1,51 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Pipelines"
+  description="Interactive maps of real production pipelines, showing which steps are technical chores and which are craft."
+>
+  <h1>Pipelines</h1>
+  <p class="lede">
+    Maps of the pipelines that run my productions. Pick a piece of software and a task to see
+    every step, and how much of it is technical chore versus actual craft.
+  </p>
+
+  <div class="map-frame">
+    <iframe
+      id="pipeline-map"
+      src="/task-map/"
+      title="Pipeline map"
+      loading="lazy"
+    ></iframe>
+  </div>
+</Base>
+
+<style>
+  /* Break out of the 42rem reading column: the map needs room. */
+  .map-frame {
+    width: min(72rem, calc(100vw - 2rem));
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  .map-frame iframe {
+    display: block;
+    width: 100%;
+    height: 80vh;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: #0d0d0f;
+  }
+</style>
+
+<script>
+  // The embed posts its content height so the iframe can fit it without an inner scrollbar.
+  const frame = document.getElementById('pipeline-map') as HTMLIFrameElement | null;
+  window.addEventListener('message', (e) => {
+    if (!frame || e.source !== frame.contentWindow) return;
+    if (e.data?.type === 'alc-embed-height' && typeof e.data.height === 'number') {
+      frame.style.height = `${e.data.height}px`;
+    }
+  });
+</script>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alchemy Pipeline Maps</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Control bar for the software + pipeline selectors. Dark to match the
+       pipeline view's style.css. Kept here (not in style.css) because the bar is
+       an export-only affordance — the live app resolves software/task from URL. */
+    body { margin: 0; background: #0d0d0f; }
+    /* Size to content, not a forced 100vh, so the iframe can auto-fit (no inner
+       scrollbar) — overrides style.css's #task-root min-height:100vh. */
+    html, body { height: auto !important; min-height: 0 !important; }
+    #task-root { min-height: 0 !important; }
+    .task-browser-bar {
+      display: flex; gap: 20px; align-items: flex-end; justify-content: center;
+      flex-wrap: wrap;
+      padding: 18px 24px; background: #131317; border-bottom: 1px solid #26262c;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .task-browser-field {
+      display: flex; flex-direction: column; gap: 6px;
+      font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #8a8a93;
+    }
+    .task-browser-bar select {
+      min-width: 180px; padding: 8px 10px; font-size: 14px;
+      background: #1d1d22; color: #f0f0f2; border: 1px solid #34343c; border-radius: 6px;
+    }
+    .task-browser-bar select:focus { outline: none; border-color: #ff00a6; }
+  </style>
+  <script>
+    window.ALC_CFG = {
+  cssHref: './style.css',
+  dataUrl: (sw, task) => `./data/${sw}/${task}.json`,
+  softwareIcon: (sw) => `./assets/icons/software/${sw}.png`,
+  phaseIcon: (name) => `./assets/icons/phases/${name}_button.png`,
+};
+window.ALC_PIPELINES = {"blender": {"label": "Blender", "tasks": [{"id": "ldv", "label": "Lookdev"}, {"id": "mdl", "label": "Model"}, {"id": "prv", "label": "Previs"}, {"id": "tex", "label": "Texture"}]}, "maya": {"label": "Maya", "tasks": [{"id": "mdl", "label": "Model"}, {"id": "rig", "label": "Rig"}]}, "premiere": {"label": "Adobe Premiere Pro", "tasks": [{"id": "edt", "label": "Editing"}]}};
+  </script>
+  <script type="module">
+    import { initTaskMapBrowser } from './task-view.js';
+    document.addEventListener("DOMContentLoaded", initTaskMapBrowser);
+  </script>
+  <script>
+    // Report the widget's true content height to the embedding page so the host
+    // iframe can auto-fit (no inner scrollbar). Fires on load, on pipeline switch,
+    // and as icons finish loading. Hosts that support resizing (e.g. Wix Velo's
+    // onMessage) can listen for { type: 'alc-embed-height' }; harmless otherwise.
+    function alcPostHeight() {
+      var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      if (window.parent !== window) window.parent.postMessage({ type: 'alc-embed-height', height: h }, '*');
+    }
+    window.addEventListener('load', alcPostHeight);
+    if (window.ResizeObserver) new ResizeObserver(alcPostHeight).observe(document.documentElement);
+  </script>
+</head>
+<body>
+  <div id="task-root"></div>
+</body>
+</html>
