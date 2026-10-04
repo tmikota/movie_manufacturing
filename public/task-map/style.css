@@ -811,7 +811,7 @@ html, body {
 #handoff-panel .hp-stats b { font-size: 18px; color: #fff; }
 #handoff-panel .hp-stats span { font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: #8a8a93; }
 #handoff-panel .hp-points { font-size: 13px; margin-bottom: 6px; }
-#handoff-panel .hp-points b { font-size: 22px; color: #ff8f8f; margin-right: 4px; }
+#handoff-panel .hp-points b { font-size: 22px; color: #ff8f8f; margin-left: 4px; }
 #handoff-panel .hp-points span { display: block; color: #8a8a93; font-size: 11px; }
 #handoff-panel .hp-scale { color: #aeaeb6; margin-bottom: 10px; }
 #handoff-panel .hp-scale b { color: #fff; }

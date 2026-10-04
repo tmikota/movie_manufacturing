@@ -740,10 +740,10 @@ function renderHandoffPanel(id, h) {
       <div><b>${fmt(list.length)}</b><span>handoffs</span></div>
       ${steps ? `<div><b>${fmt(steps)}</b><span>automated steps</span></div>` : ""}
     </div>
-    <div class="hp-points"><b>${fmt(points)}</b> potential failure points per asset
-      ${steps ? `<span>(${fmt(steps)} steps in the ${softwareLabel(stepsApp)} pipeline + ${fmt(list.length)} file handoffs)</span>` : ""}</div>
-    <div class="hp-scale">A feature can have hundreds of assets:
-      <b>&times; ${ASSETS_PER_SHOW} = ${fmt(points * ASSETS_PER_SHOW)}</b>.
+    <div class="hp-points">Potential failure points (per version): <b>${fmt(points)}</b>
+      ${steps ? `<span>${fmt(steps)} steps in the ${softwareLabel(stepsApp)} pipeline + ${fmt(list.length)} file handoffs</span>` : ""}</div>
+    <div class="hp-scale">A feature can have hundreds of assets, so one version of each is
+      <b>&times; ${ASSETS_PER_SHOW} = ${fmt(points * ASSETS_PER_SHOW)}</b>, and every new version runs them all again.
       Each is a place where a wrong or missing file breaks something downstream,
       which is why this needs machine precision, not people checking.</div>
     <div class="hp-legend"><span class="ln verified"></span>wired in Alchemy (${verified})
