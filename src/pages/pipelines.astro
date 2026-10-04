@@ -23,29 +23,49 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <style>
-  /* Break out of the 42rem reading column: the map needs room. */
+  /* Full-bleed: break out of the 42rem reading column to the window's full width. */
+  :global(body) {
+    overflow-x: clip;
+  }
   .map-frame {
-    width: min(72rem, calc(100vw - 2rem));
-    margin-left: 50%;
-    transform: translateX(-50%);
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
+    background: #0d0d0f;
   }
   .map-frame iframe {
     display: block;
     width: 100%;
-    height: 80vh;
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    background: #0d0d0f;
+    height: 100vh;
+    border: 0;
+    transform-origin: top left;
   }
 </style>
 
 <script>
-  // The embed posts its content height so the iframe can fit it without an inner scrollbar.
+  // Below this width the six phase columns no longer fit, so the map is laid out at
+  // this width and scaled down rather than cut off.
+  const MIN_WIDTH = 1400;
+  const wrap = document.querySelector('.map-frame') as HTMLElement | null;
   const frame = document.getElementById('pipeline-map') as HTMLIFrameElement | null;
-  window.addEventListener('message', (e) => {
-    if (!frame || e.source !== frame.contentWindow) return;
-    if (e.data?.type === 'alc-embed-height' && typeof e.data.height === 'number') {
-      frame.style.height = `${e.data.height}px`;
-    }
-  });
+
+  function fit() {
+    const body = frame?.contentDocument?.body;
+    if (!wrap || !frame || !body?.querySelector('#task-root')) return;
+    const scale = Math.min(1, wrap.clientWidth / MIN_WIDTH);
+    frame.style.width = scale < 1 ? `${MIN_WIDTH}px` : '100%';
+    frame.style.transform = scale < 1 ? `scale(${scale})` : '';
+    // The map is served from this site, so read its content height directly and
+    // size the frame to it: no scrollbar inside the frame.
+    const h = body.scrollHeight;
+    frame.style.height = `${h}px`;
+    wrap.style.height = `${Math.ceil(h * scale)}px`;
+  }
+
+  // Re-fit on load, on resize, and on a light poll: switching pipelines and late
+  // icon loads change the map's height without any event the page can see.
+  frame?.addEventListener('load', fit);
+  window.addEventListener('resize', fit);
+  setInterval(fit, 500);
+  fit();
 </script>
