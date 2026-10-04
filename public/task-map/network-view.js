@@ -723,16 +723,18 @@ function renderHandoffPanel(id, h) {
   const steps = Math.max(0, ...Object.values(stepsBySw));
   const stepsApp = Object.keys(stepsBySw).find((k) => stepsBySw[k] === steps);
   const points = steps + list.length;
-  const chips = (h.deliverables || []).map((d) => `<span class="chip">${d.label}</span>`).join("");
+  // Just the extensions: the labels stay in the data for editing, not for this view.
+  const exts = [...new Set((h.deliverables || []).flatMap((d) => d.ext || [d.label]))];
+  const chips = exts.map((x) => `<span class="chip">${x}</span>`).join("");
 
   el.innerHTML = `
     <div class="hp-head">
-      <div class="hp-title">${taskLabel(id)}: what it hands off</div>
+      <div class="hp-title">${taskLabel(id)}: outputs</div>
       <button class="hp-close" title="Close">&times;</button>
     </div>
     <div class="hp-chips">${chips}</div>
     <div class="hp-stats">
-      <div><b>${fmt((h.deliverables || []).length)}</b><span>deliverables</span></div>
+      <div><b>${fmt(exts.length)}</b><span>file types</span></div>
       <div><b>${fmt(depts.size)}</b><span>departments</span></div>
       <div><b>${fmt(apps.size)}</b><span>apps</span></div>
       <div><b>${fmt(list.length)}</b><span>handoffs</span></div>
@@ -820,7 +822,7 @@ function breakOne(id, h) {
   });
 
   if (story) story.innerHTML =
-    `<b>${deliverable ? deliverable.label : hit.take}</b> to <b>${taskLabel(hit.task)}</b>
+    `<b>${deliverable && deliverable.ext ? deliverable.ext.join(" / ") : (deliverable ? deliverable.label : hit.take)}</b> to <b>${taskLabel(hit.task)}</b>
      (${softwareLabel(hit.software)}) goes wrong: ${hit.breaks_if || "the handoff fails"}.
      <span class="hp-chain">${chain.length} task${chain.length === 1 ? "" : "s"} inherit it:
      ${chain.map(([t]) => taskLabel(t)).join(" &rarr; ")}</span>
