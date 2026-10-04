@@ -697,3 +697,14 @@ html, body {
 .node image.sw-icon.openable:hover {
     filter: drop-shadow(0 0 5px rgba(149, 214, 164, 0.9));
 }
+
+/* 3. Default Node: runs on the shared default pipelines, no custom recipes yet.
+   Solid (it works) but quieter than a custom pipeline. */
+.node-default .network-node-rect {
+    fill: #262a27;
+    stroke: rgba(149, 214, 164, 0.55);
+    stroke-width: 1.5;
+}
+.node-default .node-label {
+    fill: #c9d3cb;
+}

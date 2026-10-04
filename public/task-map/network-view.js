@@ -852,8 +852,11 @@ function createNodeContent(nodeGroup, handlers) {
     const spacing = 8;
 
     // 1. Assign classes for CSS-driven styling
+    // node-default: no recipes of its own, but it still runs on the shared default
+    // pipelines (set by the public export) — a working task, just not a custom one.
     g.classed("node-active", d.has_cookbook)
-     .classed("node-potential", !d.has_cookbook);
+     .classed("node-default", !d.has_cookbook && !!d.default_pipeline)
+     .classed("node-potential", !d.has_cookbook && !d.default_pipeline);
 
     // Band tint: a faint cool wash for shot/sequence tasks, a faint warm wash for
     // asset tasks, so the two column groups read apart at a glance. Set as an inline
