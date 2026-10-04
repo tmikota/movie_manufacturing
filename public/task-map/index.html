@@ -38,7 +38,7 @@
   softwareIcon: (sw) => `./assets/icons/software/${sw}.png`,
   phaseIcon: (name) => `./assets/icons/phases/${name}_button.png`,
 };
-window.ALC_PIPELINES = {"blender": {"label": "Blender", "tasks": [{"id": "ldv", "label": "Lookdev"}, {"id": "mdl", "label": "Model"}, {"id": "prv", "label": "Previs"}, {"id": "tex", "label": "Texture"}]}, "maya": {"label": "Maya", "tasks": [{"id": "mdl", "label": "Model"}, {"id": "rig", "label": "Rig"}]}, "premiere": {"label": "Adobe Premiere Pro", "tasks": [{"id": "edt", "label": "Editing"}]}};
+window.ALC_PIPELINES = {"blender": {"label": "Blender", "tasks": [{"id": "ldv", "label": "Lookdev"}, {"id": "mdl", "label": "Model"}, {"id": "prv", "label": "Previs"}, {"id": "tex", "label": "Texture"}]}, "max": {"label": "3ds Max", "tasks": [{"id": "mdl", "label": "Model"}]}, "maya": {"label": "Maya", "tasks": [{"id": "mdl", "label": "Model"}, {"id": "rig", "label": "Rig"}]}, "premiere": {"label": "Adobe Premiere Pro", "tasks": [{"id": "default", "label": "DEFAULT"}, {"id": "edt", "label": "Editing"}]}};
   </script>
   <script type="module">
     import { initTaskMapBrowser } from './task-view.js';
