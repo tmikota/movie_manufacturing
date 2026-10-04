@@ -641,7 +641,6 @@ function clearSelection() { selectNode(null); }
 // --- Failure points: everything a task hands off, and what one bad file breaks --
 
 const BREAK_COLOR = "#ff5a5a";
-const ASSETS_PER_SHOW = 300; // illustrative: a feature can have hundreds of assets
 let BREAK_TIMERS = [];
 let BREAK_INDEX = 0;
 
@@ -712,42 +711,43 @@ function renderHandoffPanel(id, h) {
     el.id = "handoff-panel";
     host.appendChild(el);
   }
+  const node = nodeById(id) || {};
   const list = handoffList(h);
-  const depts = new Set((h.consumers || []).map((c) => c.task));
-  const apps = new Set((h.consumers || []).map((c) => c.software));
-  const verified = list.filter((x) => x.verified).length;
   const fmt = (n) => n.toLocaleString();
+
+  // Just the extensions: the labels stay in the data for editing, not for this view.
+  const exts = [...new Set((h.deliverables || []).flatMap((d) => d.ext || [d.label]))];
+  const depts = [...new Set((h.consumers || []).map((c) => c.task))];
+  const software = (node.software || []).filter((sw) => sw !== "alchemy");
   // Automated steps inside the task's own phases are failure points too (the
   // public export supplies them per software; take the biggest pipeline).
-  const stepsBySw = (nodeById(id) || {}).steps || {};
+  const stepsBySw = node.steps || {};
   const steps = Math.max(0, ...Object.values(stepsBySw));
   const stepsApp = Object.keys(stepsBySw).find((k) => stepsBySw[k] === steps);
   const points = steps + list.length;
-  // Just the extensions: the labels stay in the data for editing, not for this view.
-  const exts = [...new Set((h.deliverables || []).flatMap((d) => d.ext || [d.label]))];
-  const chips = exts.map((x) => `<span class="chip">${x}</span>`).join("");
+  // The software you last opened from this task's card, else Alchemy.
+  const headSw = (GRAPH.selectedSoftware && GRAPH.selectedSoftware.task === id)
+    ? GRAPH.selectedSoftware.sw : "alchemy";
+
+  // One row per thing that matters: label left, count right, detail below.
+  const row = (label, count, detail = "") => `
+    <div class="hp-row">
+      <div class="hp-line"><span class="hp-label">${label}</span><span class="hp-count">${fmt(count)}</span></div>
+      ${detail ? `<div class="hp-detail">${detail}</div>` : ""}
+    </div>`;
 
   el.innerHTML = `
     <div class="hp-head">
-      <div class="hp-title">${taskLabel(id)}: outputs</div>
+      <h1 class="hp-title"><img class="hp-icon" src="${iconUrl(headSw)}" alt="${softwareLabel(headSw)}">${taskLabel(id)}</h1>
       <button class="hp-close" title="Close">&times;</button>
     </div>
-    <div class="hp-chips">${chips}</div>
-    <div class="hp-stats">
-      <div><b>${fmt(exts.length)}</b><span>file types</span></div>
-      <div><b>${fmt(depts.size)}</b><span>departments</span></div>
-      <div><b>${fmt(apps.size)}</b><span>apps</span></div>
-      <div><b>${fmt(list.length)}</b><span>handoffs</span></div>
-      ${steps ? `<div><b>${fmt(steps)}</b><span>automated steps</span></div>` : ""}
+    ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip">${x}</span>`).join("")}</div>`)}
+    ${row("Dependencies", depts.length, depts.map(taskLabel).join(", "))}
+    ${row("Supported software", software.length, software.map(softwareLabel).join(", "))}
+    <div class="hp-row hp-fail">
+      <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${fmt(points)}</span></div>
+      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length)} file handoffs, per version</div>
     </div>
-    <div class="hp-points">Potential failure points (per version): <b>${fmt(points)}</b>
-      ${steps ? `<span>${fmt(steps)} steps in the ${softwareLabel(stepsApp)} pipeline + ${fmt(list.length)} file handoffs</span>` : ""}</div>
-    <div class="hp-scale">A feature can have hundreds of assets, so one version of each is
-      <b>&times; ${ASSETS_PER_SHOW} = ${fmt(points * ASSETS_PER_SHOW)}</b>, and every new version runs them all again.
-      Each is a place where a wrong or missing file breaks something downstream,
-      which is why this needs machine precision, not people checking.</div>
-    <div class="hp-legend"><span class="ln verified"></span>wired in Alchemy (${verified})
-      <span class="ln typical"></span>typical, not yet wired (${list.length - verified})</div>
     <button class="hp-break">Break one</button>
     <div class="hp-story"></div>`;
   el.querySelector(".hp-close").onclick = clearSelection;
@@ -1198,6 +1198,10 @@ function createNodeContent(nodeGroup, handlers) {
           .on("mouseout", hideLinkTip)
           .on("click", (e) => {
              e.stopPropagation();
+             if (GRAPH) {
+               GRAPH.selectedSoftware = { task: d.id, sw };
+               if (GRAPH.selected === d.id && HANDOFFS[d.id]) renderHandoffPanel(d.id, HANDOFFS[d.id]);
+             }
              if (openable) handlers.onSoftwareClick(e, d, sw);
           });
       });
