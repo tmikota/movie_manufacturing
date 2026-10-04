@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alchemy Production Pipeline</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <style>
+    body { margin: 0; background: #0a0a0a; overflow: hidden; }
+    #pipeline-visualizer-container {
+      display: flex; flex-direction: column; height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .net-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      flex-wrap: wrap; padding: 14px 24px; background: #131317;
+      border-bottom: 1px solid #26262c;
+    }
+    .net-title h2 { margin: 0; font-size: 18px; color: #95D6A4; }
+    .net-title p {
+      margin: 4px 0 0; font-size: 10px; letter-spacing: .12em;
+      text-transform: uppercase; color: #6b6b74;
+    }
+    .net-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .net-controls button {
+      padding: 6px 14px; border-radius: 999px; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+      background: transparent; color: #888; border: 1px solid #333;
+    }
+    .net-controls button:hover { color: #fff; border-color: #95D6A4; }
+    .net-controls .filter-btn.bg-alcGreen {
+      background: #95D6A4; color: #000; border-color: #95D6A4;
+    }
+    .net-controls .sep { width: 1px; height: 22px; background: #2a2a2a; margin: 0 4px; }
+    #visualization { flex: 1; position: relative; overflow: hidden; cursor: grab; }
+    #visualization:active { cursor: grabbing; }
+    /* Read-only: nothing to drag or delete; only live pipelines are clickable. */
+    .node.read-only, .link { cursor: default; }
+    .node image.openable { cursor: pointer; }
+  </style>
+  <script>
+    window.ALC_LIVE = {"blender": ["ldv", "mdl", "prv", "tex"], "max": ["mdl"], "maya": ["mdl", "rig"], "premiere": ["edt"]};
+window.ALC_NET_CFG = {
+  cssHref: './style.css',
+  dataUrl: './data/graph.json',
+  readOnly: true,
+  fitOnLoad: true,
+  canOpen: (sw, task) => (window.ALC_LIVE[sw] || []).includes(task),
+  // Embedded: ask the host page to show this pipeline in its task map.
+  // Standalone: fall back to the task-map page.
+  openPipeline: (sw, task) => {
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'alc-open-pipeline', software: sw, task }, '*');
+    } else {
+      window.location.href = './';
+    }
+  },
+};
+  </script>
+  <script type="module">
+    import { loadAndRenderPipeline, filterGraph, fitToScreen } from './network-view.js';
+    window.filterGraph = filterGraph;
+    window.pipelineFit = () => fitToScreen();
+    loadAndRenderPipeline().catch((err) => console.error('Pipeline load error:', err));
+  </script>
+</head>
+<body>
+  <div id="pipeline-visualizer-container">
+    <header class="net-bar">
+      <div class="net-title">
+        <h2>Production Pipeline</h2>
+        <p>How work flows from task to task</p>
+      </div>
+      <div class="net-controls">
+      <button onclick="pipelineFit()" title="Zoom to fit every task">Fit</button>
+      <span class="sep"></span>
+      <button class="filter-btn bg-alcGreen" onclick="filterGraph('all')">All</button>
+      <button class="filter-btn" onclick="filterGraph('technology')">technology</button>
+      <button class="filter-btn" onclick="filterGraph('production')">production</button>
+      <button class="filter-btn" onclick="filterGraph('story')">story</button>
+      <button class="filter-btn" onclick="filterGraph('assets')">assets</button>
+      <button class="filter-btn" onclick="filterGraph('cfx')">cfx</button>
+      <button class="filter-btn" onclick="filterGraph('animation')">animation</button>
+      <button class="filter-btn" onclick="filterGraph('finishing')">finishing</button>
+      <button class="filter-btn" onclick="filterGraph('marketing')">marketing</button>
+      </div>
+    </header>
+    <div id="visualization"></div>
+  </div>
+</body>
+</html>

@@ -8,11 +8,19 @@ import Base from '../layouts/Base.astro';
 >
   <h1>Pipelines</h1>
   <p class="lede">
-    Maps of the pipelines that run my productions. Pick a piece of software and a task to see
-    every step, and how much of it is technical chore versus actual craft.
+    How work moves through a production, task by task, and what each pipeline looks like
+    inside: every step, and how much of it is technical chore versus actual craft.
   </p>
 
-  <div class="map-frame">
+  <div class="network-frame full-bleed">
+    <iframe src="/task-map/network.html" title="Production pipeline network"></iframe>
+  </div>
+  <p class="frame-note">
+    Drag to pan, scroll to zoom. Filled-in tasks have a working pipeline; click a software
+    icon on one to open its map below.
+  </p>
+
+  <div class="map-frame full-bleed" id="pipeline-map-section">
     <iframe
       id="pipeline-map"
       src="/task-map/"
@@ -27,11 +35,23 @@ import Base from '../layouts/Base.astro';
   :global(body) {
     overflow-x: clip;
   }
-  .map-frame {
+  .full-bleed {
     width: 100vw;
     margin-left: calc(50% - 50vw);
     overflow: hidden;
     background: #0d0d0f;
+  }
+  .network-frame iframe {
+    display: block;
+    width: 100%;
+    height: max(32rem, 75vh);
+    border: 0;
+  }
+  .frame-note {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0.75rem 0 2.5rem;
   }
   .map-frame iframe {
     display: block;
@@ -68,4 +88,27 @@ import Base from '../layouts/Base.astro';
   window.addEventListener('resize', fit);
   setInterval(fit, 500);
   fit();
+
+  // The network view asks to open a pipeline (a click on a live software icon):
+  // scroll to the map and switch its selectors to that department + software.
+  function openPipeline(software: string, task: string, triesLeft = 100) {
+    const doc = frame?.contentDocument;
+    const dept = doc?.getElementById('tb-dept') as HTMLSelectElement | null;
+    const sw = doc?.getElementById('tb-software') as HTMLSelectElement | null;
+    if (!dept || !sw) {
+      // The map loads lazily; wait for its selectors to exist.
+      if (triesLeft > 0) setTimeout(() => openPipeline(software, task, triesLeft - 1), 100);
+      return;
+    }
+    dept.value = task;
+    dept.dispatchEvent(new Event('change'));
+    sw.value = software;
+    sw.dispatchEvent(new Event('change'));
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || e.data?.type !== 'alc-open-pipeline') return;
+    document.getElementById('pipeline-map-section')?.scrollIntoView({ behavior: 'smooth' });
+    openPipeline(String(e.data.software), String(e.data.task));
+  });
 </script>
