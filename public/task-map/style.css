@@ -746,3 +746,84 @@ html, body {
     pointer-events: none;
     filter: drop-shadow(0 0 4px currentColor);
 }
+
+/* --- Failure points: handoff wires, panel, and the "break one" cascade ------ */
+.handoff {
+    stroke: #95D6A4;
+    stroke-width: 2;
+    pointer-events: none;
+}
+.handoff.typical { stroke-dasharray: 6 5; stroke-opacity: 0.8; }
+.handoff.broken, .link.broken {
+    stroke: #ff5a5a !important;
+    stroke-width: 3;
+    stroke-opacity: 1 !important;
+}
+.node.broken .network-node-rect {
+    stroke: #ff5a5a !important;
+    stroke-width: 4;
+    filter: drop-shadow(0 0 10px rgba(255, 90, 90, 0.6));
+    animation: node-break 0.5s ease;
+}
+.has-selection .node.broken > * { opacity: 1; }
+@keyframes node-break {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+.node .network-node-rect { transform-box: fill-box; transform-origin: center; }
+
+#handoff-panel {
+    display: none;
+    position: absolute;
+    top: 76px;
+    right: 16px;
+    width: 340px;
+    max-height: calc(100% - 92px);
+    overflow-y: auto;
+    z-index: 40;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: rgba(17, 17, 20, 0.94);
+    border: 1px solid #2c2c33;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color: #d9d9de;
+    font: 12px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+#handoff-panel .hp-head { display: flex; justify-content: space-between; align-items: center; }
+#handoff-panel .hp-title { font-size: 14px; font-weight: 700; color: #fff; }
+#handoff-panel .hp-close {
+    background: none; border: 0; color: #888; font-size: 20px; cursor: pointer; line-height: 1;
+}
+#handoff-panel .hp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0; }
+#handoff-panel .chip {
+    padding: 2px 7px; border-radius: 999px; font-size: 10.5px;
+    background: #1f2a22; color: #b9e3c3; border: 1px solid #2f4535;
+}
+#handoff-panel .hp-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    margin: 6px 0 10px;
+}
+#handoff-panel .hp-stats div {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 6px 2px; border-radius: 8px; background: #19191d;
+}
+#handoff-panel .hp-stats b { font-size: 18px; color: #fff; }
+#handoff-panel .hp-stats span { font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: #8a8a93; }
+#handoff-panel .hp-points { font-size: 13px; margin-bottom: 6px; }
+#handoff-panel .hp-points b { font-size: 22px; color: #ff8f8f; margin-right: 4px; }
+#handoff-panel .hp-points span { display: block; color: #8a8a93; font-size: 11px; }
+#handoff-panel .hp-scale { color: #aeaeb6; margin-bottom: 10px; }
+#handoff-panel .hp-scale b { color: #fff; }
+#handoff-panel .hp-legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: #8a8a93; font-size: 11px; margin-bottom: 10px; }
+#handoff-panel .ln { display: inline-block; width: 22px; border-top: 2px solid #95D6A4; margin-left: 6px; }
+#handoff-panel .ln.typical { border-top-style: dashed; }
+#handoff-panel .hp-break {
+    width: 100%; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 700;
+    background: #3a1717; color: #ffb3b3; border: 1px solid #6b2a2a;
+}
+#handoff-panel .hp-break:hover { background: #4a1c1c; color: #fff; }
+#handoff-panel .hp-story { margin-top: 10px; color: #e2e2e6; }
+#handoff-panel .hp-story:empty { display: none; }
+#handoff-panel .hp-chain { display: block; margin-top: 6px; color: #ff9b9b; }
+#handoff-panel .hp-typical { display: block; margin-top: 6px; color: #8a8a93; font-style: italic; }

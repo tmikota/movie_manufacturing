@@ -67,6 +67,9 @@ function iconUrl(sw) {
 }
 // {software_id: display name} for the icon hover labels.
 let LABEL_MAP = {};
+// {task_id: {deliverables, consumers}}: what a task hands downstream, for the
+// failure-points panel (app/tools/pipeline_viewer/data/handoffs.json).
+let HANDOFFS = {};
 function softwareLabel(sw) {
     return (LABEL_MAP && LABEL_MAP[sw]) || sw;
 }
@@ -276,6 +279,7 @@ export async function initAlchemyGraph() {
     const graphData = await response.json();
     ICON_MAP = graphData.icons || {};
     LABEL_MAP = graphData.labels || {};
+    HANDOFFS = graphData.handoffs || {};
 
     // Deterministic state object
     const state = {
@@ -518,6 +522,7 @@ function createForceSimulation(
 
   function ticked() {
     if (GRAPH.linkSel) GRAPH.linkSel.attr("d", linkPath);
+    if (GRAPH.handoffSel) GRAPH.handoffSel.attr("d", linkPath);
     GRAPH.nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
   }
 }
@@ -583,7 +588,10 @@ function selectNode(id) {
   GRAPH.selected = id;
   const svg = d3.select(GRAPH.svgEl.node());
   svg.classed("has-selection", !!id);
+  resetBreak();
   GRAPH.flowLayer.selectAll("*").remove();
+  GRAPH.handoffSel = null;
+  hideHandoffPanel();
   if (!id) {
     GRAPH.nodeSel.classed("sel-node", false).classed("sel-up", false).classed("sel-down", false);
     GRAPH.linkSel.classed("sel-in", false).classed("sel-out", false);
@@ -624,9 +632,200 @@ function selectNode(id) {
   });
   addDots(ins, FLOW_IN, 0);
   addDots(outs, FLOW_OUT, FLOW_DUR / 2);
+
+  if (HANDOFFS[id]) showHandoffs(id);
 }
 
 function clearSelection() { selectNode(null); }
+
+// --- Failure points: everything a task hands off, and what one bad file breaks --
+
+const BREAK_COLOR = "#ff5a5a";
+const ASSETS_PER_SHOW = 300; // illustrative: a feature can have hundreds of assets
+let BREAK_TIMERS = [];
+let BREAK_INDEX = 0;
+
+function nodeById(id) { return GRAPH.nodes.find((n) => n.id === id); }
+function taskLabel(id) { const n = nodeById(id); return (n && (n.label || n.id)) || id; }
+function handoffDomId(id, task) { return `handoff-${id}--${task}`.replace(/[^A-Za-z0-9_-]/g, "_"); }
+
+// One wire per consuming task (its software rolled up), drawn from the selected
+// task even where the production graph has no link yet: dashed when that
+// handoff isn't wired up in Alchemy. Dots flow out along them like any output.
+function showHandoffs(id) {
+  const h = HANDOFFS[id];
+  const src = nodeById(id);
+  const byTask = new Map();
+  (h.consumers || []).forEach((c) => {
+    if (!nodeById(c.task)) return;
+    if (!byTask.has(c.task)) byTask.set(c.task, []);
+    byTask.get(c.task).push(c);
+  });
+  // Consumers already linked in the graph keep their real wire.
+  const linked = new Set(GRAPH.links.filter((l) => srcId(l) === id).map(tgtId));
+  const wires = [...byTask.entries()]
+    .filter(([task]) => !linked.has(task))
+    .map(([task, cs]) => ({
+      source: src, target: nodeById(task), consumers: cs,
+      verified: cs.some((c) => c.verified),
+    }));
+
+  GRAPH.handoffSel = GRAPH.flowLayer.selectAll("path.handoff")
+    .data(wires).enter()
+    .insert("path", ":first-child")
+    .attr("class", (w) => `handoff ${w.verified ? "verified" : "typical"}`)
+    .attr("id", (w) => handoffDomId(id, w.target.id))
+    .attr("fill", "none")
+    .attr("marker-end", "url(#arrow-out)")
+    .attr("d", linkPath);
+
+  const consumers = new Set(byTask.keys());
+  GRAPH.nodeSel.classed("sel-down", (n) => consumers.has(n.id) || linked.has(n.id));
+
+  wires.forEach((w) => {
+    for (let i = 0; i < DOTS_PER_WIRE; i++) {
+      GRAPH.flowLayer.append("circle").attr("class", "flow-dot").attr("r", 5).attr("fill", FLOW_OUT)
+        .append("animateMotion")
+          .attr("dur", `${FLOW_DUR}s`).attr("repeatCount", "indefinite")
+          .attr("begin", `${FLOW_DUR / 2 + (i * FLOW_DUR) / DOTS_PER_WIRE}s`)
+        .append("mpath")
+          .attr("href", `#${handoffDomId(id, w.target.id)}`)
+          .attr("xlink:href", `#${handoffDomId(id, w.target.id)}`);
+    }
+  });
+
+  renderHandoffPanel(id, h);
+}
+
+function handoffList(h) {
+  return (h.consumers || []).flatMap((c) =>
+    (c.takes || []).map((t) => ({ ...c, take: t })));
+}
+
+function renderHandoffPanel(id, h) {
+  const host = document.getElementById("pipeline-visualizer-container");
+  if (!host) return;
+  if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  let el = document.getElementById("handoff-panel");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "handoff-panel";
+    host.appendChild(el);
+  }
+  const list = handoffList(h);
+  const depts = new Set((h.consumers || []).map((c) => c.task));
+  const apps = new Set((h.consumers || []).map((c) => c.software));
+  const verified = list.filter((x) => x.verified).length;
+  const fmt = (n) => n.toLocaleString();
+  // Automated steps inside the task's own phases are failure points too (the
+  // public export supplies them per software; take the biggest pipeline).
+  const stepsBySw = (nodeById(id) || {}).steps || {};
+  const steps = Math.max(0, ...Object.values(stepsBySw));
+  const stepsApp = Object.keys(stepsBySw).find((k) => stepsBySw[k] === steps);
+  const points = steps + list.length;
+  const chips = (h.deliverables || []).map((d) => `<span class="chip">${d.label}</span>`).join("");
+
+  el.innerHTML = `
+    <div class="hp-head">
+      <div class="hp-title">${taskLabel(id)}: what it hands off</div>
+      <button class="hp-close" title="Close">&times;</button>
+    </div>
+    <div class="hp-chips">${chips}</div>
+    <div class="hp-stats">
+      <div><b>${fmt((h.deliverables || []).length)}</b><span>deliverables</span></div>
+      <div><b>${fmt(depts.size)}</b><span>departments</span></div>
+      <div><b>${fmt(apps.size)}</b><span>apps</span></div>
+      <div><b>${fmt(list.length)}</b><span>handoffs</span></div>
+      ${steps ? `<div><b>${fmt(steps)}</b><span>automated steps</span></div>` : ""}
+    </div>
+    <div class="hp-points"><b>${fmt(points)}</b> potential failure points per asset
+      ${steps ? `<span>(${fmt(steps)} steps in the ${softwareLabel(stepsApp)} pipeline + ${fmt(list.length)} file handoffs)</span>` : ""}</div>
+    <div class="hp-scale">A feature can have hundreds of assets:
+      <b>&times; ${ASSETS_PER_SHOW} = ${fmt(points * ASSETS_PER_SHOW)}</b>.
+      Each is a place where a wrong or missing file breaks something downstream,
+      which is why this needs machine precision, not people checking.</div>
+    <div class="hp-legend"><span class="ln verified"></span>wired in Alchemy (${verified})
+      <span class="ln typical"></span>typical, not yet wired (${list.length - verified})</div>
+    <button class="hp-break">Break one</button>
+    <div class="hp-story"></div>`;
+  el.querySelector(".hp-close").onclick = clearSelection;
+  el.querySelector(".hp-break").onclick = () => breakOne(id, h);
+  el.style.display = "block";
+}
+
+function hideHandoffPanel() {
+  const el = document.getElementById("handoff-panel");
+  if (el) el.style.display = "none";
+}
+
+function resetBreak() {
+  BREAK_TIMERS.forEach(clearTimeout);
+  BREAK_TIMERS = [];
+  if (!GRAPH) return;
+  if (GRAPH.nodeSel) GRAPH.nodeSel.classed("broken", false);
+  if (GRAPH.linkSel) GRAPH.linkSel.classed("broken", false);
+  if (GRAPH.handoffSel) GRAPH.handoffSel.classed("broken", false);
+  if (GRAPH.flowLayer) GRAPH.flowLayer.selectAll(".break-dot").remove();
+}
+
+// Send one bad file down one handoff, then let the failure walk the graph: the
+// consumer breaks, then everything downstream of it, one step at a time. Each
+// click picks the next handoff in the list.
+function breakOne(id, h) {
+  resetBreak();
+  const list = handoffList(h);
+  if (!list.length) return;
+  const hit = list[BREAK_INDEX++ % list.length];
+  const deliverable = (h.deliverables || []).find((d) => d.id === hit.take);
+  const story = document.querySelector("#handoff-panel .hp-story");
+
+  // The bad file travels the handoff once: along the dashed handoff wire, or
+  // the real link when the graph already has one.
+  let pathId = handoffDomId(id, hit.task);
+  const realLink = GRAPH.links.find((l) => srcId(l) === id && tgtId(l) === hit.task);
+  if (realLink) {
+    pathId = linkDomId(realLink);
+    GRAPH.linkSel.filter((l) => l === realLink).classed("broken", true);
+  } else if (GRAPH.handoffSel) {
+    GRAPH.handoffSel.filter((w) => w.target.id === hit.task).classed("broken", true);
+  }
+  const anim = GRAPH.flowLayer.append("circle")
+      .attr("class", "flow-dot break-dot").attr("r", 7).attr("fill", BREAK_COLOR)
+    .append("animateMotion")
+      .attr("dur", "0.9s").attr("repeatCount", "1").attr("fill", "freeze")
+      .attr("begin", "indefinite");
+  anim.append("mpath").attr("href", `#${pathId}`).attr("xlink:href", `#${pathId}`);
+  if (anim.node().beginElement) anim.node().beginElement();
+
+  // Breadth-first downstream from the consumer, one depth per beat.
+  const depthOf = new Map([[hit.task, 0]]);
+  const queue = [hit.task];
+  while (queue.length) {
+    const u = queue.shift();
+    GRAPH.links.forEach((l) => {
+      const t = tgtId(l);
+      if (srcId(l) === u && !depthOf.has(t) && t !== id) {
+        depthOf.set(t, depthOf.get(u) + 1);
+        queue.push(t);
+      }
+    });
+  }
+  const chain = [...depthOf.entries()].sort((a, b) => a[1] - b[1]);
+  const BEAT = 450;
+  chain.forEach(([task, depth]) => {
+    BREAK_TIMERS.push(setTimeout(() => {
+      GRAPH.nodeSel.filter((n) => n.id === task).classed("broken", true);
+      GRAPH.linkSel.filter((l) => tgtId(l) === task && depthOf.has(srcId(l))).classed("broken", true);
+    }, 900 + depth * BEAT));
+  });
+
+  if (story) story.innerHTML =
+    `<b>${deliverable ? deliverable.label : hit.take}</b> to <b>${taskLabel(hit.task)}</b>
+     (${softwareLabel(hit.software)}) goes wrong: ${hit.breaks_if || "the handoff fails"}.
+     <span class="hp-chain">${chain.length} task${chain.length === 1 ? "" : "s"} inherit it:
+     ${chain.map(([t]) => taskLabel(t)).join(" &rarr; ")}</span>
+     ${hit.verified ? "" : '<span class="hp-typical">A typical handoff, not yet wired in Alchemy.</span>'}`;
+}
 
 if (typeof document !== "undefined") {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") clearSelection(); });
@@ -1009,6 +1208,7 @@ export async function loadAndRenderPipeline() {
     const data = await res.json();
     ICON_MAP = data.icons || {};
     LABEL_MAP = data.labels || {};
+    HANDOFFS = data.handoffs || {};
 
     // Calculate depth locally within the module
     const depthMap = computeDepthFromLinks(data.nodes, data.links);
