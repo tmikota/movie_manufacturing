@@ -741,9 +741,9 @@ function renderHandoffPanel(id, h) {
       <h1 class="hp-title"><img class="hp-icon" src="${iconUrl(headSw)}" alt="${softwareLabel(headSw)}">${taskLabel(id)}</h1>
       <button class="hp-close" title="Close">&times;</button>
     </div>
-    ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip">${x}</span>`).join("")}</div>`)}
+    ${row("Software", software.length, software.map(softwareLabel).join(", "))}
     ${row("Dependencies", depts.length, depts.map(taskLabel).join(", "))}
-    ${row("Supported software", software.length, software.map(softwareLabel).join(", "))}
+    ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip">${x}</span>`).join("")}</div>`)}
     <div class="hp-row hp-fail">
       <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${fmt(points)}</span></div>
       <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length)} file handoffs, <span class="hp-per-version">per version</span></div>
