@@ -724,7 +724,11 @@ function renderHandoffPanel(id, h) {
   const stepsBySw = node.steps || {};
   const steps = Math.max(0, ...Object.values(stepsBySw));
   const stepsApp = Object.keys(stepsBySw).find((k) => stepsBySw[k] === steps);
-  const points = steps + list.length;
+  // Inputs are handoffs too: a wrong file coming in breaks this task.
+  const inputs = h.inputs || [];
+  const inExts = [...new Set(inputs.flatMap((i) => i.ext || []))];
+  const inCount = inputs.reduce((n, i) => n + (i.ext || []).length, 0);
+  const points = steps + list.length + inCount;
   // The software you last opened from this task's card, else Alchemy.
   const headSw = (GRAPH.selectedSoftware && GRAPH.selectedSoftware.task === id)
     ? GRAPH.selectedSoftware.sw : "alchemy";
@@ -743,10 +747,13 @@ function renderHandoffPanel(id, h) {
     </div>
     ${row("Software", software.length, software.map(softwareLabel).join(", "))}
     ${row("Dependencies", depts.length, depts.map(taskLabel).join(", "))}
+    ${inputs.length ? row("Inputs", inExts.length,
+      `<div class="hp-chips">${inExts.map((x) => `<span class="chip chip-in">${x}</span>`).join("")}</div>
+       <div class="hp-from">from ${[...new Set(inputs.map((i) => taskLabel(i.task)))].join(", ")}</div>`) : ""}
     ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip">${x}</span>`).join("")}</div>`)}
     <div class="hp-row hp-fail">
       <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${fmt(points)}</span></div>
-      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length)} file handoffs, <span class="hp-per-version">per version</span></div>
+      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length + inCount)} file handoffs${inCount ? ` (${fmt(inCount)} in, ${fmt(list.length)} out)` : ""}, <span class="hp-per-version">per version</span></div>
     </div>
     <button class="hp-break">Break one</button>
     <div class="hp-story"></div>`;

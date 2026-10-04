@@ -811,6 +811,8 @@ html, body {
     background: #1f2a22; color: #b9e3c3; border: 1px solid #2f4535;
 }
 #handoff-panel .hp-fail .hp-count { color: #ff8f8f; font-size: 28px; }
+#handoff-panel .chip-in { background: #1a2433; color: #b8d8ff; border-color: #2c3f5a; }
+#handoff-panel .hp-from { margin-top: 5px; }
 #handoff-panel .hp-per-version { color: #ff8f8f; font-weight: 800; }
 #handoff-panel .hp-break {
     width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px; cursor: pointer;
