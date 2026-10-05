@@ -684,15 +684,17 @@ async function openTaskEditor(id) {
     pipelineToast("Couldn't open the editor.");
     return;
   }
-  const overlay = document.createElement("div");
-  overlay.id = "task-editor-modal";
-  overlay.innerHTML = html;
-  document.body.appendChild(overlay);
-  const dlg = overlay.querySelector(".te-dialog");
-  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
-  const onKey = (e) => { if (e.key === "Escape") close(); };
-  document.addEventListener("keydown", onKey);
-  overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) close(); });
+  // Edit in place: the selected task's panel turns into the form, and Cancel /
+  // Save turn it back. One panel to see and edit a task, not two.
+  if (GRAPH.selected !== id) selectNode(id);
+  const panel = document.getElementById("handoff-panel");
+  if (!panel) return;
+  panel.innerHTML = html;
+  panel.classList.add("editing");
+  panel.style.display = "block";
+  const dlg = panel.querySelector(".te-dialog");
+  // Back to the read view (re-rendered from the current data).
+  const close = () => { if (GRAPH.selected === id) selectNode(id); };
 
   dlg.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-te]");
@@ -841,6 +843,7 @@ function renderHandoffPanel(id, h) {
     el.id = "handoff-panel";
     host.appendChild(el);
   }
+  el.classList.remove("editing");
   const node = nodeById(id) || {};
   const list = handoffList(h);
   const fmt = (n) => n.toLocaleString();
@@ -883,7 +886,12 @@ function renderHandoffPanel(id, h) {
   el.innerHTML = `
     <div class="hp-head">
       <h1 class="hp-title"><img class="hp-icon" src="${iconUrl(headSw)}" alt="${softwareLabel(headSw)}">${taskLabel(id)}</h1>
-      <button class="hp-close" title="Close">&times;</button>
+      <div class="hp-actions">
+        ${!NET_CFG.readOnly && editorBase()
+          ? '<button class="hp-edit" title="Edit production task (or right-click the card)"><i class="fa-solid fa-pen"></i> Edit</button>'
+          : ""}
+        <button class="hp-close" title="Close">&times;</button>
+      </div>
     </div>
     ${row("Software", software.length, software.map(softwareLabel).join(", "))}
     ${row("Dependencies", depts.length, depts.map(taskLabel).join(", "))}
@@ -904,6 +912,8 @@ function renderHandoffPanel(id, h) {
     ${depts.length ? '<button class="hp-break">Break one</button>' : ""}
     <div class="hp-story"></div>`;
   el.querySelector(".hp-close").onclick = clearSelection;
+  const editBtn = el.querySelector(".hp-edit");
+  if (editBtn) editBtn.onclick = () => openTaskEditor(id);
   const breakBtn = el.querySelector(".hp-break");
   if (breakBtn) breakBtn.onclick = () => breakOne(id, h);
   el.querySelectorAll(".chip[data-ext]").forEach((chip) => {
@@ -938,7 +948,7 @@ function chipTip(h, ext, dir) {
 
 function hideHandoffPanel() {
   const el = document.getElementById("handoff-panel");
-  if (el) el.style.display = "none";
+  if (el) { el.style.display = "none"; el.classList.remove("editing"); }
 }
 
 function resetBreak() {
@@ -1016,7 +1026,12 @@ function breakOne(id, h) {
 }
 
 if (typeof document !== "undefined") {
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") clearSelection(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const panel = document.getElementById("handoff-panel");
+    if (panel && panel.classList.contains("editing") && GRAPH && GRAPH.selected) selectNode(GRAPH.selected);
+    else clearSelection();
+  });
 }
 
 // Nodes are a uniform height now (no ports to stack). Kept as a function so the

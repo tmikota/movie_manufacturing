@@ -800,6 +800,12 @@ html, body {
     background: none; border: 0; color: #777; font-size: 22px; cursor: pointer; line-height: 1;
 }
 #handoff-panel .hp-close:hover { color: #fff; }
+#handoff-panel .hp-actions { display: flex; align-items: center; gap: 6px; }
+#handoff-panel .hp-edit {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 7px; cursor: pointer;
+    background: #17211a; border: 1px solid #2f4535; color: #b9e3c3; font-size: 12px; font-weight: 700;
+}
+#handoff-panel .hp-edit:hover { background: #1f2d23; color: #fff; border-color: #95D6A4; }
 #handoff-panel .hp-row { padding: 12px 0; border-top: 1px solid #24242a; }
 #handoff-panel .hp-line { display: flex; justify-content: space-between; align-items: baseline; }
 #handoff-panel .hp-label { font-size: 15px; font-weight: 700; color: #f2f2f4; }
@@ -852,69 +858,85 @@ html, body {
     background: none; border: 0; color: #e5e5ea; font-size: 12px; cursor: pointer; white-space: nowrap;
 }
 #node-menu button:hover { background: #24242a; }
-#task-editor-modal {
-    position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center;
-    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px);
-}
-#task-editor-modal .te-dialog {
-    width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); display: flex; flex-direction: column;
-    background: #0d0d0f; border: 1px solid #26262c; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
-    color: #d9d9de; font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-}
-#task-editor-modal .te-head { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid #222; }
-#task-editor-modal .te-badge {
+.te-dialog { display: flex; flex-direction: column; color: #d9d9de; }
+.te-dialog .te-head { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid #222; }
+.te-dialog .te-badge {
     width: 40px; height: 40px; border-radius: 10px; border: 1px solid; display: flex; align-items: center; justify-content: center;
 }
-#task-editor-modal .te-titles { flex: 1; min-width: 0; }
-#task-editor-modal .te-titles h2 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; }
-#task-editor-modal .te-cat { font-size: 9px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
-#task-editor-modal .te-x { background: none; border: 0; color: #777; font-size: 22px; cursor: pointer; }
-#task-editor-modal .te-x:hover { color: #fff; }
-#task-editor-modal .te-body { overflow-y: auto; padding: 6px 22px 16px; }
-#task-editor-modal section { padding: 14px 0; border-bottom: 1px solid #1b1b1f; }
-#task-editor-modal section:last-child { border-bottom: 0; }
-#task-editor-modal h3 {
+.te-dialog .te-titles { flex: 1; min-width: 0; }
+.te-dialog .te-titles h2 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; }
+.te-dialog .te-cat { font-size: 9px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+.te-dialog .te-x { background: none; border: 0; color: #777; font-size: 22px; cursor: pointer; }
+.te-dialog .te-x:hover { color: #fff; }
+.te-dialog .te-body { overflow-y: auto; padding: 6px 22px 16px; }
+.te-dialog section { padding: 14px 0; border-bottom: 1px solid #1b1b1f; }
+.te-dialog section:last-child { border-bottom: 0; }
+.te-dialog h3 {
     margin: 0 0 10px; font-size: 9px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; color: #8a8a93;
 }
-#task-editor-modal .te-hint { margin-left: 6px; letter-spacing: 0; text-transform: none; font-weight: 500; color: #5f5f68; }
-#task-editor-modal .te-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-#task-editor-modal .te-chip {
+.te-dialog .te-hint { margin-left: 6px; letter-spacing: 0; text-transform: none; font-weight: 500; color: #5f5f68; }
+.te-dialog .te-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.te-dialog .te-chip {
     display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 9px; border-radius: 999px;
     background: #17171b; border: 1px solid #2a2a31; color: #e2e2e6; font-size: 12px;
 }
-#task-editor-modal .te-chip img { width: 16px; height: 16px; object-fit: contain; }
-#task-editor-modal .te-chip button, #task-editor-modal .te-row button {
+.te-dialog .te-chip img { width: 16px; height: 16px; object-fit: contain; }
+.te-dialog .te-chip button, .te-dialog .te-row button {
     background: none; border: 0; color: #6b6b74; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 3px;
 }
-#task-editor-modal .te-chip button:hover, #task-editor-modal .te-row button:hover { color: #ff8f8f; }
-#task-editor-modal select, #task-editor-modal input:not([type="checkbox"]) {
+.te-dialog .te-chip button:hover, .te-dialog .te-row button:hover { color: #ff8f8f; }
+.te-dialog select, .te-dialog input:not([type="checkbox"]) {
     background: #141418; border: 1px solid #2a2a31; border-radius: 6px; color: #e5e5ea;
     padding: 6px 8px; font-size: 12px; min-width: 0;
 }
-#task-editor-modal select:focus, #task-editor-modal input:focus { outline: none; border-color: #95D6A4; }
-#task-editor-modal .te-add { width: 220px; color: #9a9aa3; }
-#task-editor-modal .te-note { margin: 8px 0 0; color: #6f6f78; font-size: 11px; }
-#task-editor-modal .te-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
-#task-editor-modal .te-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-#task-editor-modal .te-row-out input[name="ext"] { width: 170px; }
-#task-editor-modal .te-row-out input[name="used_for"] { flex: 1; }
-#task-editor-modal .te-row-in select[name="task"] { width: 130px; }
-#task-editor-modal .te-row-in input[name="ext"] { width: 110px; }
-#task-editor-modal .te-row-in select[name="software"] { width: 110px; }
-#task-editor-modal .te-row-in .te-wide { flex: 1; min-width: 160px; }
-#task-editor-modal .te-check { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #9a9aa3; }
-#task-editor-modal .te-addrow {
+.te-dialog select:focus, .te-dialog input:focus { outline: none; border-color: #95D6A4; }
+.te-dialog .te-add { width: 220px; color: #9a9aa3; }
+.te-dialog .te-note { margin: 8px 0 0; color: #6f6f78; font-size: 11px; }
+.te-dialog .te-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.te-dialog .te-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.te-dialog .te-row-out input[name="ext"] { width: 170px; }
+.te-dialog .te-row-out input[name="used_for"] { flex: 1; }
+.te-dialog .te-row-in select[name="task"] { width: 130px; }
+.te-dialog .te-row-in input[name="ext"] { width: 110px; }
+.te-dialog .te-row-in select[name="software"] { width: 110px; }
+.te-dialog .te-row-in .te-wide { flex: 1; min-width: 160px; }
+.te-dialog .te-check { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #9a9aa3; }
+.te-dialog .te-addrow {
     background: none; border: 1px dashed #33333b; border-radius: 6px; color: #9a9aa3;
     padding: 5px 10px; font-size: 11px; cursor: pointer;
 }
-#task-editor-modal .te-addrow:hover { color: #fff; border-color: #95D6A4; }
-#task-editor-modal .te-foot {
+.te-dialog .te-addrow:hover { color: #fff; border-color: #95D6A4; }
+.te-dialog .te-foot {
     display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid #222;
 }
-#task-editor-modal .te-error { flex: 1; color: #ff8f8f; font-size: 12px; }
-#task-editor-modal .te-cancel, #task-editor-modal .te-save {
+.te-dialog .te-error { flex: 1; color: #ff8f8f; font-size: 12px; }
+.te-dialog .te-cancel, .te-dialog .te-save {
     padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
-#task-editor-modal .te-cancel { background: none; border: 1px solid #33333b; color: #b0b0b8; }
-#task-editor-modal .te-save { background: #95D6A4; border: 1px solid #95D6A4; color: #000; }
-#task-editor-modal .te-save:hover { filter: brightness(1.08); }
+.te-dialog .te-cancel { background: none; border: 1px solid #33333b; color: #b0b0b8; }
+.te-dialog .te-save { background: #95D6A4; border: 1px solid #95D6A4; color: #000; }
+.te-dialog .te-save:hover { filter: brightness(1.08); }
+
+/* Edit mode: the task panel widens a little and becomes the form. */
+/* Stops short of the bottom so the app's floating chat button can't cover Save. */
+#handoff-panel.editing { width: 440px; padding: 0; max-height: calc(100% - 170px); }
+#handoff-panel.editing .te-head { padding: 16px 18px; }
+#handoff-panel.editing .te-body { padding: 0 18px 8px; overflow: visible; }
+#handoff-panel.editing .te-foot {
+    position: sticky; bottom: 0; padding: 12px 18px; background: rgba(17, 17, 20, 0.98);
+}
+#handoff-panel.editing .te-add { width: 100%; }
+/* Rows stack to fit the panel: inputs become a small two-column card. */
+#handoff-panel.editing .te-row-out { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+#handoff-panel.editing .te-row-out input[name="ext"] { width: auto; grid-column: 1; }
+#handoff-panel.editing .te-row-out input[name="used_for"] { grid-column: 1; }
+#handoff-panel.editing .te-row-out button { grid-column: 2; grid-row: 1; }
+#handoff-panel.editing .te-row-in {
+    display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px;
+    padding: 8px; border: 1px solid #1f1f25; border-radius: 8px; background: #121215;
+}
+#handoff-panel.editing .te-row-in select[name="task"],
+#handoff-panel.editing .te-row-in input[name="ext"],
+#handoff-panel.editing .te-row-in select[name="software"] { width: auto; }
+#handoff-panel.editing .te-row-in .te-wide { grid-column: 1 / 3; min-width: 0; }
+#handoff-panel.editing .te-row-in button { grid-column: 3; grid-row: 1; }
