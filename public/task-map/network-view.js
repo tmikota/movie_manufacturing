@@ -635,6 +635,7 @@ function selectNode(id) {
   addDots(outs, FLOW_OUT, FLOW_DUR / 2);
 
   if (HANDOFFS[id]) showHandoffs(id);
+  else renderHandoffPanel(id, {});
 }
 
 function clearSelection() { selectNode(null); }
@@ -718,8 +719,13 @@ function renderHandoffPanel(id, h) {
 
   // Just the extensions: the labels stay in the data for editing, not for this view.
   const exts = [...new Set((h.deliverables || []).flatMap((d) => d.ext || [d.label]))];
-  const depts = [...new Set((h.consumers || []).map((c) => c.task))];
-  const software = (node.software || []).filter((sw) => sw !== "alchemy");
+  // Departments fed: mapped consumers plus the graph's own downstream links.
+  const graphDown = GRAPH.links.filter((l) => srcId(l) === id).map(tgtId);
+  const graphUp = GRAPH.links.filter((l) => tgtId(l) === id).map(srcId);
+  const depts = [...new Set([...(h.consumers || []).map((c) => c.task), ...graphDown])];
+  // The task's own apps; a task that runs only in Alchemy says so rather than 0.
+  const dccs = (node.software || []).filter((sw) => sw !== "alchemy");
+  const software = dccs.length ? dccs : ["alchemy"];
   // Automated steps inside the task's own phases are failure points too (the
   // public export supplies them per software; take the biggest pipeline).
   const stepsBySw = node.steps || {};
@@ -735,9 +741,10 @@ function renderHandoffPanel(id, h) {
     ? GRAPH.selectedSoftware.sw : "alchemy";
 
   // One row per thing that matters: label left, count right, detail below.
+  // A null count renders as a dash: known gap, not zero.
   const row = (label, count, detail = "") => `
     <div class="hp-row">
-      <div class="hp-line"><span class="hp-label">${label}</span><span class="hp-count">${fmt(count)}</span></div>
+      <div class="hp-line"><span class="hp-label">${label}</span><span class="hp-count">${count == null ? "&ndash;" : fmt(count)}</span></div>
       ${detail ? `<div class="hp-detail">${detail}</div>` : ""}
     </div>`;
 
@@ -748,18 +755,25 @@ function renderHandoffPanel(id, h) {
     </div>
     ${row("Software", software.length, software.map(softwareLabel).join(", "))}
     ${row("Dependencies", depts.length, depts.map(taskLabel).join(", "))}
-    ${inputs.length ? row("Inputs", inExts.length,
-      `<div class="hp-chips">${inExts.map((x) => `<span class="chip chip-in" data-ext="${x}" data-dir="in">${x}</span>`).join("")}</div>
-       <div class="hp-from">from ${[...new Set(inputs.map((i) => taskLabel(i.task)))].join(", ")}</div>`) : ""}
-    ${row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip" data-ext="${x}" data-dir="out">${x}</span>`).join("")}</div>`)}
+    ${inputs.length
+      ? row("Inputs", inExts.length,
+        `<div class="hp-chips">${inExts.map((x) => `<span class="chip chip-in" data-ext="${x}" data-dir="in">${x}</span>`).join("")}</div>
+         <div class="hp-from">from ${[...new Set(inputs.map((i) => taskLabel(i.task)))].join(", ")}</div>`)
+      : row("Inputs", null, `${graphUp.length ? `from ${graphUp.map(taskLabel).join(", ")}. ` : ""}<span class="hp-unmapped">File types not mapped yet.</span>`)}
+    ${exts.length
+      ? row("Outputs", exts.length, `<div class="hp-chips">${exts.map((x) => `<span class="chip" data-ext="${x}" data-dir="out">${x}</span>`).join("")}</div>`)
+      : row("Outputs", null, '<span class="hp-unmapped">File types not mapped yet.</span>')}
     <div class="hp-row hp-fail">
-      <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${fmt(points)}</span></div>
-      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps + ` : ""}${fmt(list.length + inCount)} file handoffs${inCount ? ` (${fmt(inCount)} in, ${fmt(list.length)} out)` : ""}, <span class="hp-per-version">per version</span></div>
+      <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${points ? fmt(points) : "&ndash;"}</span></div>
+      <div class="hp-detail">${steps ? `${fmt(steps)} automated steps` : ""}${list.length + inCount
+        ? `${steps ? " + " : ""}${fmt(list.length + inCount)} file handoffs${inCount ? ` (${fmt(inCount)} in, ${fmt(list.length)} out)` : ""}`
+        : `${steps ? " + " : ""}<span class="hp-unmapped">file handoffs not mapped yet</span>`}, <span class="hp-per-version">per version</span></div>
     </div>
-    <button class="hp-break">Break one</button>
+    ${depts.length ? '<button class="hp-break">Break one</button>' : ""}
     <div class="hp-story"></div>`;
   el.querySelector(".hp-close").onclick = clearSelection;
-  el.querySelector(".hp-break").onclick = () => breakOne(id, h);
+  const breakBtn = el.querySelector(".hp-break");
+  if (breakBtn) breakBtn.onclick = () => breakOne(id, h);
   el.querySelectorAll(".chip[data-ext]").forEach((chip) => {
     chip.addEventListener("mouseenter", (e) =>
       showTip(e, chipTip(h, chip.dataset.ext, chip.dataset.dir), true));
@@ -817,7 +831,11 @@ function resetBreak() {
 // click picks the next handoff in the list.
 function breakOne(id, h) {
   resetBreak();
-  const list = handoffList(h);
+  let list = handoffList(h);
+  if (!list.length) {
+    list = GRAPH.links.filter((l) => srcId(l) === id)
+      .map((l) => ({ task: tgtId(l), software: null, take: null, verified: true }));
+  }
   if (!list.length) return;
   const hit = list[BREAK_INDEX++ % list.length];
   const deliverable = (h.deliverables || []).find((d) => d.id === hit.take);
@@ -864,8 +882,10 @@ function breakOne(id, h) {
   });
 
   if (story) story.innerHTML =
-    `<b>${deliverable && deliverable.ext ? deliverable.ext.join(" / ") : (deliverable ? deliverable.label : hit.take)}</b> to <b>${taskLabel(hit.task)}</b>
-     (${softwareLabel(hit.software)}) goes wrong: ${hit.breaks_if || "the handoff fails"}.
+    `${hit.take
+       ? `<b>${deliverable && deliverable.ext ? deliverable.ext.join(" / ") : (deliverable ? deliverable.label : hit.take)}</b>`
+       : `A bad file from <b>${taskLabel(id)}</b>`} to <b>${taskLabel(hit.task)}</b>${hit.software ? ` (${softwareLabel(hit.software)})` : ""}
+     goes wrong${hit.breaks_if ? `: ${hit.breaks_if}` : ""}.
      <span class="hp-chain">${chain.length} task${chain.length === 1 ? "" : "s"} inherit it:
      ${chain.map(([t]) => taskLabel(t)).join(" &rarr; ")}</span>
      ${hit.verified ? "" : '<span class="hp-typical">A typical handoff, not yet wired in Alchemy.</span>'}`;
