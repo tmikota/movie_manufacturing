@@ -506,6 +506,14 @@ function createForceSimulation(
   nodeGroup
     .on("mouseover", handlers.showTooltip)
     .on("mouseout", handlers.hideTooltip)
+    // Right-click a card → "Edit production task" (app only: the page names
+    // the editor URL; the read-only public export doesn't).
+    .on("contextmenu", (event, d) => {
+      if (NET_CFG.readOnly || !editorBase()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      showNodeMenu(event, d);
+    })
     // Clicking a card selects it: its inputs and outputs light up and dots flow
     // through it. Opening a pipeline is the software icons' job.
     .on("click", (event, d) => {
@@ -640,6 +648,125 @@ function selectNode(id) {
 }
 
 function clearSelection() { selectNode(null); }
+
+// --- Edit production task (right-click a card) ---------------------------------
+
+function editorBase() {
+  const host = document.getElementById("pipeline-visualizer-container");
+  return host ? host.dataset.editorUrl || "" : "";
+}
+
+function closeNodeMenu() {
+  document.getElementById("node-menu")?.remove();
+}
+
+function showNodeMenu(event, d) {
+  closeNodeMenu();
+  const menu = document.createElement("div");
+  menu.id = "node-menu";
+  menu.innerHTML = `<button type="button"><i class="fa-solid fa-pen-to-square"></i> Edit production task</button>`;
+  menu.style.left = `${event.clientX}px`;
+  menu.style.top = `${event.clientY}px`;
+  menu.querySelector("button").onclick = () => { closeNodeMenu(); openTaskEditor(d.id); };
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener("click", closeNodeMenu, { once: true }), 0);
+}
+
+async function openTaskEditor(id) {
+  const url = `${editorBase()}/${encodeURIComponent(id)}/editor`;
+  let html;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    html = await res.text();
+  } catch (err) {
+    console.error(err);
+    pipelineToast("Couldn't open the editor.");
+    return;
+  }
+  const overlay = document.createElement("div");
+  overlay.id = "task-editor-modal";
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+  const dlg = overlay.querySelector(".te-dialog");
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) close(); });
+
+  dlg.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-te]");
+    if (!btn) return;
+    const action = btn.dataset.te;
+    if (action === "close") close();
+    else if (action === "remove-chip") btn.closest(".te-chip").remove();
+    else if (action === "remove-row") btn.closest(".te-row").remove();
+    else if (action === "add-row") {
+      const tpl = dlg.querySelector(`template[data-te-template="${btn.dataset.teTarget}"]`);
+      const rows = dlg.querySelector(`[data-te-rows="${btn.dataset.teTarget}"]`);
+      rows.appendChild(tpl.content.cloneNode(true));
+      rows.lastElementChild.querySelector('input[name="ext"]')?.focus();
+    } else if (action === "save") saveTaskEditor(id, dlg, close);
+  });
+  // "+ Add …" selects turn into chips.
+  dlg.querySelectorAll('select[data-te="add-chip"]').forEach((sel) => {
+    sel.addEventListener("change", () => {
+      const opt = sel.selectedOptions[0];
+      const list = dlg.querySelector(`[data-te-list="${sel.dataset.teTarget}"]`);
+      if (opt && opt.value && !list.querySelector(`[data-value="${opt.value}"]`)) {
+        const chip = document.createElement("span");
+        chip.className = "te-chip";
+        chip.dataset.value = opt.value;
+        chip.innerHTML = `${opt.dataset.icon ? `<img src="${opt.dataset.icon}" alt="">` : ""}${opt.textContent}
+          <button type="button" data-te="remove-chip" title="Remove">&times;</button>`;
+        list.appendChild(chip);
+      }
+      sel.value = "";
+    });
+  });
+}
+
+function collectTaskEditor(dlg) {
+  const chips = (name) => [...dlg.querySelectorAll(`[data-te-list="${name}"] .te-chip`)]
+    .map((c) => c.dataset.value);
+  const rows = (name) => [...dlg.querySelectorAll(`[data-te-rows="${name}"] .te-row`)]
+    .map((row) => Object.fromEntries([...row.querySelectorAll("[name]")].map((f) =>
+      [f.name, f.type === "checkbox" ? f.checked : f.value])));
+  return {
+    software: chips("software"),
+    downstream: chips("downstream"),
+    outputs: rows("outputs"),
+    inputs: rows("inputs"),
+  };
+}
+
+async function saveTaskEditor(id, dlg, close) {
+  const err = dlg.querySelector('[data-te="error"]');
+  err.textContent = "";
+  try {
+    const res = await fetch(`${editorBase()}/${encodeURIComponent(id)}/editor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(collectTaskEditor(dlg)),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      err.textContent = data.error || "Couldn't save.";
+      return;
+    }
+  } catch (e) {
+    console.error(e);
+    err.textContent = "Couldn't save.";
+    return;
+  }
+  close();
+  // Redraw from the saved model, keeping the view where it was.
+  const keep = GRAPH && GRAPH.svgEl ? d3.zoomTransform(GRAPH.svgEl.node()) : null;
+  await loadAndRenderPipeline();
+  if (keep && GRAPH && ZOOM) GRAPH.svgEl.call(ZOOM.transform, keep);
+  selectNode(id);
+  pipelineToast(`Saved ${taskLabel(id)}.`, false);
+}
 
 // --- Failure points: everything a task hands off, and what one bad file breaks --
 
