@@ -67,8 +67,9 @@ function iconUrl(sw) {
 }
 // {software_id: display name} for the icon hover labels.
 let LABEL_MAP = {};
-// {task_id: {deliverables, consumers}}: what a task hands downstream, for the
-// failure-points panel (app/tools/pipeline_viewer/data/handoffs.json).
+// {task_id: {outputs, inputs, consumers}}: a task's file handoffs, for the
+// failure-points panel. From the ProductionTask model (outputs / inputs); the
+// server derives each task's consumers from everyone else's inputs.
 let HANDOFFS = {};
 function softwareLabel(sw) {
     return (LABEL_MAP && LABEL_MAP[sw]) || sw;
@@ -700,7 +701,7 @@ function showHandoffs(id) {
 
 function handoffList(h) {
   return (h.consumers || []).flatMap((c) =>
-    (c.takes || []).map((t) => ({ ...c, take: t })));
+    (c.ext || []).map((x) => ({ ...c, take: x })));
 }
 
 function renderHandoffPanel(id, h) {
@@ -718,7 +719,11 @@ function renderHandoffPanel(id, h) {
   const fmt = (n) => n.toLocaleString();
 
   // Just the extensions: the labels stay in the data for editing, not for this view.
-  const exts = [...new Set((h.deliverables || []).flatMap((d) => d.ext || [d.label]))];
+  // A task's outputs, plus anything its consumers take that isn't listed yet.
+  const exts = [...new Set([
+    ...(h.outputs || []).flatMap((o) => o.ext || []),
+    ...(h.consumers || []).flatMap((c) => c.ext || []),
+  ])];
   // Departments fed: mapped consumers plus the graph's own downstream links.
   const graphDown = GRAPH.links.filter((l) => srcId(l) === id).map(tgtId);
   const graphUp = GRAPH.links.filter((l) => tgtId(l) === id).map(srcId);
@@ -766,7 +771,7 @@ function renderHandoffPanel(id, h) {
     <div class="hp-row hp-fail">
       <div class="hp-line"><span class="hp-label">Failure points</span><span class="hp-count">${points ? fmt(points) : "&ndash;"}</span></div>
       <div class="hp-detail">${steps ? `${fmt(steps)} automated steps` : ""}${list.length + inCount
-        ? `${steps ? " + " : ""}${fmt(list.length + inCount)} file handoffs${inCount ? ` (${fmt(inCount)} in, ${fmt(list.length)} out)` : ""}`
+        ? `${steps ? " + " : ""}${fmt(list.length + inCount)} file handoff${list.length + inCount === 1 ? "" : "s"}${inCount ? ` (${fmt(inCount)} in, ${fmt(list.length)} out)` : ""}`
         : `${steps ? " + " : ""}<span class="hp-unmapped">file handoffs not mapped yet</span>`}, <span class="hp-per-version">per version</span></div>
     </div>
     ${depts.length ? '<button class="hp-break">Break one</button>' : ""}
@@ -783,10 +788,6 @@ function renderHandoffPanel(id, h) {
   el.style.display = "block";
 }
 
-// Native scene extensions name their app, so a multi-format deliverable can show
-// only the consumers that actually open that extension.
-const EXT_APP = { ".ma": "maya", ".mb": "maya", ".blend": "blender", ".max": "max" };
-
 // "What is this file for?": who takes it (or where it comes from) and why.
 function chipTip(h, ext, dir) {
   const who = (pairs) => pairs.length
@@ -800,12 +801,9 @@ function chipTip(h, ext, dir) {
       (from ? `<div class="tip-who">from ${from}</div>` : "") +
       (note ? `<div class="tip-for">${note}</div>` : "");
   }
-  const dels = (h.deliverables || []).filter((d) => (d.ext || []).includes(ext));
-  const ids = new Set(dels.map((d) => d.id));
-  const app = EXT_APP[ext];
-  const takers = (h.consumers || []).filter((c) =>
-    (c.takes || []).some((t) => ids.has(t)) && (!app || c.software === app));
-  const usedFor = dels.map((d) => d.used_for).filter(Boolean)[0];
+  const outs = (h.outputs || []).filter((o) => (o.ext || []).includes(ext));
+  const takers = (h.consumers || []).filter((c) => (c.ext || []).includes(ext));
+  const usedFor = outs.map((o) => o.used_for).filter(Boolean)[0];
   return `<div class="tip-ext">${ext}</div>` +
     (takers.length ? `<div class="tip-who">&rarr; ${who(takers)}</div>` : "") +
     (usedFor ? `<div class="tip-for">${usedFor}</div>` : "");
@@ -838,7 +836,6 @@ function breakOne(id, h) {
   }
   if (!list.length) return;
   const hit = list[BREAK_INDEX++ % list.length];
-  const deliverable = (h.deliverables || []).find((d) => d.id === hit.take);
   const story = document.querySelector("#handoff-panel .hp-story");
 
   // The bad file travels the handoff once: along the dashed handoff wire, or
@@ -883,7 +880,7 @@ function breakOne(id, h) {
 
   if (story) story.innerHTML =
     `${hit.take
-       ? `<b>${deliverable && deliverable.ext ? deliverable.ext.join(" / ") : (deliverable ? deliverable.label : hit.take)}</b>`
+       ? `<b>${hit.take}</b>`
        : `A bad file from <b>${taskLabel(id)}</b>`} to <b>${taskLabel(hit.task)}</b>${hit.software ? ` (${softwareLabel(hit.software)})` : ""}
      goes wrong${hit.breaks_if ? `: ${hit.breaks_if}` : ""}.
      <span class="hp-chain">${chain.length} task${chain.length === 1 ? "" : "s"} inherit it:
