@@ -6,19 +6,13 @@ description: >-
 pubDate: 2026-10-07
 draft: false
 ---
-Reviews in the Age of Automation
+Reviews Systems in the Age of Automation
 
-I could also say Reviews in the micro-studio.   What's different about reviews where automation is commonplace?
+![](/images/essays/reviews-in-the-age-of-automation/20261007-115952-u3g0.png)
 
-Artists can handle more volume.   *Before we get our pitchforks out, always remember to read why volume is GOOD for studios that want to be profitable while everyone else is going out of business.*  They can do that because systems are handling technical chores.
+There's a lot of review systems out there.  SyncSketch, Frame.io, Shotgrid/Flow, etc… But as with a lot of things reviews are more than just the actual reviewing.   There's some systems involved if you want to get to the level of "movie manufacturing" where we're eliminating all the technical chores so artists can submit reviews easily, folks can give comments easily, and we can utilize those comments to speed up the iteration cycle.
 
-This means getting renders created and prepped, and submitting reviews is essentially part of the wallpaper - no longer a custom task that can take days to accomplish.   What that means for the artist is that they can look at an automated first pass of an asset with as little as a design as a starting point.  So the artist themselves becomes the first reviewer.
-
-It means that reviews become a shared responsibility.   Artists review their own work - the system records their own feedback (often feedback given to themselves or as a result of agentic work that they will then go back and address themselves faster than AI can adress it.
-
-Honestly though other than volume not much else has changed.
-
-But what do reviews really look like? There's a lot of off the shelf review tools that are fantastic.  Whether you buy or build your own (everyone wants to build their own with AI) this is what you're review system has to be capable of.
+Whether you buy or build your own (everyone wants to build their own with AI) this is what you're review system has to be capable of in the context of movie manufacturing.
 
 1. 1 Click Submissions
 1. Playlists
@@ -28,7 +22,7 @@ But what do reviews really look like? There's a lot of off the shelf review tool
 
 Advanced:
 
-1. Turn Notes into "To Do" list
+1. Notes → TODO List
 1. TODO tracking system
 1. TODO farming system
 
