@@ -68,6 +68,13 @@ main,
 .site-header nav { display: flex; gap: 1.25rem; font-size: 0.95rem; }
 .site-header nav a { color: var(--muted); text-decoration: none; }
 .site-header nav a:hover { color: var(--text); }
+.site-header nav a.edit-button {
+  padding: 0 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--accent);
+}
+.site-header nav a.edit-button:hover { background: var(--accent); color: var(--bg); }
 
 main { padding-top: 2.5rem; padding-bottom: 4rem; }
 
@@ -103,6 +110,16 @@ h3 { font-size: 1.15rem; margin-top: 2rem; }
 .essay-list p { margin: 0.4rem 0 0; }
 
 .prose img { max-width: 100%; height: auto; }
+.prose img.img-large,
+.prose img.img-medium,
+.prose img.img-small { display: block; margin-left: auto; margin-right: auto; }
+.prose img.img-large { width: 75%; }
+.prose img.img-medium { width: 50%; }
+.prose img.img-small { width: 33%; }
+@media (max-width: 40rem) {
+  .prose img.img-medium,
+  .prose img.img-small { width: 75%; }
+}
 .prose blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--accent); color: var(--muted); }
 .prose code { font-family: var(--mono); font-size: 0.85em; background: var(--code-bg); padding: 0.1em 0.3em; border-radius: 3px; }
 .prose pre { overflow-x: auto; padding: 1rem; border-radius: 6px; font-size: 0.85rem; }

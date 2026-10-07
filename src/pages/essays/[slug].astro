@@ -10,9 +10,12 @@ export async function getStaticPaths() {
 
 const { essay } = Astro.props;
 const { Content } = await render(essay);
+// Keystatic names entries after the markdown file, e.g. articles/build-or-buy.md -> build-or-buy.
+const fileSlug = essay.filePath?.split('/').pop()?.replace(/\.md$/, '') ?? essay.id;
+const editHref = `/keystatic/collection/essays/item/${fileSlug}`;
 ---
 
-<Base title={essay.data.title} description={essay.data.description}>
+<Base title={essay.data.title} description={essay.data.description} editHref={editHref}>
   <article>
     <h1>
       {essay.data.title}

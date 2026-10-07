@@ -4,10 +4,16 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  /** Where the dev-only Edit button goes; defaults to the Keystatic essay list. */
+  editHref?: string;
 }
 
 const siteName = 'Movie Manufacturing';
-const { title, description = 'Essays on building film and animation production as a system, by Tom Mikota.' } = Astro.props;
+const {
+  title,
+  description = 'Essays on building film and animation production as a system, by Tom Mikota.',
+  editHref = '/keystatic/collection/essays',
+} = Astro.props;
 const pageTitle = title ? `${title} | ${siteName}` : siteName;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -34,6 +40,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         <a href="/">Essays</a>
         <a href="/pipelines">Pipelines</a>
         <a href="/about">About</a>
+        {import.meta.env.DEV && <a class="edit-button" href={editHref}>Edit</a>}
       </nav>
     </header>
     <main>

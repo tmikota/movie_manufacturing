@@ -21,6 +21,16 @@
         "dist"
       ],
       "port": 4322
+    },
+    {
+      "name": "alchemy-app",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd /d C:\\Users\\tmiko\\PycharmProjects\\alchemy\\app && set PYTHONPATH=&& ..\\venv\\Scripts\\python.exe main.py"
+      ],
+      "port": 8080,
+      "autoPort": false
     }
   ]
 }
