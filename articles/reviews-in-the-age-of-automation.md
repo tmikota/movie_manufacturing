@@ -4,7 +4,7 @@ description: >-
   Reviewing creative work has changed drastically with the introduction of AI,
   not the mechanism itself, but the process.  And for whom reviews are useful. 
 pubDate: 2026-10-07
-draft: true
+draft: false
 ---
 Reviews in the Age of Automation
 
@@ -106,10 +106,30 @@ Delete
 
 ![](/images/essays/reviews-in-the-age-of-automation/20261007-114359-ewqr.png)
 
-## Written Notes
+## Notes
+
+Sketch Notes
+
+![](/images/essays/reviews-in-the-age-of-automation/20261007-114723-nhpr.png)
+
+Written Notes
+
+![](/images/essays/reviews-in-the-age-of-automation/20261007-115052-y243.png)
 
 ## Notes → TODO
 
+An artist should be able to easily take notes from a review session and incorporate them as a todo list for their next version.
+
+I do this for myself now just to keep track of what i'm doing.
+
+In editorial for example I've even built tools that make the TODO list interactive. Allowing me to jump right to the frame the note was written for.  the same can be done for any production task.
+
 ## TODO tracking system
 
+If you track todo items you have ideas for your next set of features when you look at the patterns in the TODO items.
+
 ## TODO farming System
+
+You'll want a way of farming the completed TODO items - this will allow you to see patterns and think of new features based on those patterns.
+
+Farming the TODO system is quite literally what drove me to create the video script templating system I now use for creating videos.
