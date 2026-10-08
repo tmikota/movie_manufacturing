@@ -134,6 +134,12 @@ h3 { font-size: 1.15rem; margin-top: 2rem; }
 .prose pre { overflow-x: auto; padding: 1rem; border-radius: 6px; font-size: 0.85rem; }
 .prose pre code { background: none; padding: 0; }
 .prose hr { border: none; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+.prose .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+.prose table { width: 100%; border-collapse: collapse; font-size: 0.95rem; line-height: 1.45; }
+.prose th, .prose td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+.prose th { font-family: var(--sans); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; color: var(--muted); border-bottom-color: var(--text); }
+.prose td > :first-child { margin-top: 0; }
+.prose td > :last-child { margin-bottom: 0; }
 
 .site-footer {
   padding-top: 1.5rem;
