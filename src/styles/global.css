@@ -110,6 +110,15 @@ h3 { font-size: 1.15rem; margin-top: 2rem; }
 .essay-list p { margin: 0.4rem 0 0; }
 
 .prose img { max-width: 100%; height: auto; }
+/* Unsized images (screen grabs, mostly) break out of the 42rem text column so
+   dense UI stays legible; they never upscale past their natural width. */
+.prose img:not(.img-large):not(.img-medium):not(.img-small) {
+  display: block;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(72rem, 100vw - 2rem);
+}
 .prose img.img-large,
 .prose img.img-medium,
 .prose img.img-small { display: block; margin-left: auto; margin-right: auto; }
